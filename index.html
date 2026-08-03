@@ -14,7 +14,6 @@ a{color:inherit;text-decoration:none}
 /* HEADER */
 header{background:var(--HG);color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
 .hb{display:flex;align-items:center;gap:11px}
-.hl覆{width:34px;height:34px;background:var(--H);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;cursor:pointer;user-select:none;flex-shrink:0}
 .hl{width:34px;height:34px;background:var(--H);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;cursor:pointer;user-select:none;flex-shrink:0}
 .ht{font-size:14px;font-weight:700}.hs{font-size:11px;opacity:.6}
 .hr{display:flex;align-items:center;gap:8px}
@@ -151,7 +150,7 @@ footer a{color:var(--GR)}
     <div class="hl" id="logo" title="Klik 5x untuk admin">RT2</div>
     <div>
       <div class="ht">Keuangan Warga</div>
-      <div class="hs">Sunrise River Jl.Jalak Suren</div>
+      <div class="hs">Sunrise River Jl. Jalak Suren</div>
     </div>
   </div>
   <div class="hr">
@@ -351,7 +350,7 @@ footer a{color:var(--GR)}
 </div>
 
 <footer>
-  Sunrise River Jl.Jalak Suren &bull; Keuangan Transparan &bull; <span id="lupd">--</span>
+  Sunrise River Jl. Jalak Suren &bull; Keuangan Transparan &bull; <span id="lupd">--</span>
   &nbsp;|&nbsp;<a href="#" onclick="bukaSetup();return false">Setup</a>
   &nbsp;|&nbsp;<a href="#" onclick="showLogin();return false">Admin</a>
 </footer>
@@ -482,7 +481,7 @@ async function loadData(){
       '<tr><td colspan="8"><div class="ec">'
       +'<div class="ei">⚙️</div>'
       +'<div class="et">Belum terhubung ke database</div>'
-      +'<div class="ed">Admin perlu mengisi URL Apps Script agar data tampil. Klik tombol di bawah untuk login and konfigurasi.</div>'
+      +'<div class="ed">Admin perlu mengisi URL Apps Script agar data tampil. Klik tombol di bawah untuk login dan konfigurasi.</div>'
       +'<div class="ea"><button class="btn bp" style="width:auto" onclick="showLogin()">Login Admin</button></div>'
       +'</div></td></tr>';
     return;
@@ -497,7 +496,14 @@ async function loadData(){
     if(json.status==='ok'){
       TRX=json.transaksi||json.data||[];
       WARGA=json.warga||[];
-      renderTrx(TRX); renderStats(TRX); renderKat(TRX);
+      renderTrx(TRX); 
+      // Inisialisasi penampilan awal data ringkasan atas menyesuaikan periode aktif saat data selesai dimuat
+      if (document.querySelector('.tabs .tb.on').textContent === 'Ringkasan') {
+        renderGrafik(TRX);
+      } else {
+        renderStats(TRX);
+      }
+      renderKat(TRX);
       renderWarga();
       sync('','Update '+new Date().toLocaleTimeString('id-ID'));
       document.getElementById('lupd').textContent='Update: '+new Date().toLocaleTimeString('id-ID');
@@ -554,7 +560,7 @@ function cari(q){
 }
 
 // ================================================================
-//  STATS
+//  STATS (STANDAR KETIKA DI LUAR TAB RINGKASAN)
 // ================================================================
 function renderStats(data){
   var now=new Date(),m=now.getMonth(),y=now.getFullYear();
@@ -566,6 +572,13 @@ function renderStats(data){
   document.getElementById('s1').textContent=fRp(tM);
   document.getElementById('s2').textContent=fRp(tK);
   document.getElementById('s3').textContent=data.length;
+  
+  var subTexts = document.querySelectorAll('.sc .ss');
+  if(subTexts.length >= 4) {
+    subTexts[1].textContent = 'Bulan ini';
+    subTexts[2].textContent = 'Bulan ini';
+    subTexts[3].textContent = 'Total semua waktu';
+  }
 }
 
 // ================================================================
@@ -755,10 +768,11 @@ function tab(t,btn){
   });
   if(t==='warga') renderWarga();
   if(t==='grafik') renderGrafik(TRX);
+  if(t==='trx') renderStats(TRX);
 }
 
 // ================================================================
-//  GRAFIK
+//  GRAFIK & FILTER PERIODE WAKTU
 // ================================================================
 var PN={'minggu':'Minggu ini','bulan':'Bulan ini','3bulan':'3 bulan terakhir','6bulan':'6 bulan terakhir','tahun':'Tahun ini'};
 function periode(p,btn){
@@ -772,9 +786,9 @@ function filPer(data,p){
   var now=new Date(),from;
   if(p==='minggu'){from=new Date(now);from.setDate(now.getDate()-6);from.setHours(0,0,0,0);}
   else if(p==='bulan'){from=new Date(now.getFullYear(),now.getMonth(),1);}
-  else if(p==='3bulan'){from=new Date(now);from.setMonth(now.getMonth()-2);from.setDate(1);}
-  else if(p==='6bulan'){from=new Date(now);from.setMonth(now.getMonth()-5);from.setDate(1);}
-  else{from=new Date(now.getFullYear(),0,1);}
+  else if(p==='3bulan'){from=new Date(now);from.setMonth(now.getMonth()-2);from.setDate(1);from.setHours(0,0,0,0);}
+  else if(p==='6bulan'){from=new Date(now);from.setMonth(now.getMonth()-5);from.setDate(1);from.setHours(0,0,0,0);}
+  else {from=new Date(now.getFullYear(),0,1);}
   return data.filter(function(r){return new Date(r.tanggal)>=from;});
 }
 function grpData(data,p){
@@ -821,9 +835,27 @@ function renderGrafik(data){
     label:'Saldo',data:sld,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.08)',
     borderWidth:2.5,pointBackgroundColor:'#378ADD',pointRadius:4,fill:true,tension:0.35
   }]},options:bo});
-  var tM=msk.reduce(function(a,b){return a+b;},0);
-  var tK=klr.reduce(function(a,b){return a+b;},0);
+
+  // Hitung total kumulatif berdasarkan filter periode aktif
+  var tM=fil.filter(function(r){return r.jenis==='masuk';}).reduce(function(a,b){return a+Number(b.nominal);},0);
+  var tK=fil.filter(function(r){return r.jenis==='keluar';}).reduce(function(a,b){return a+Number(b.nominal);},0);
+  var sd=data.length?Number(data[data.length-1].saldo):0; // Saldo riil saat ini tetap akumulasi akhir dari seluruh waktu
   var net=tM-tK;
+
+  // Memperbarui 4 Menu Card Utama di Bagian Paling Atas secara dinamis
+  document.getElementById('s0').textContent=fRp(sd);
+  document.getElementById('s1').textContent=fRp(tM);
+  document.getElementById('s2').textContent=fRp(tK);
+  document.getElementById('s3').textContent=fil.length;
+
+  // Menyesuaikan teks keterangan di bawah sub-menu atas
+  var subTexts = document.querySelectorAll('.sc .ss');
+  if(subTexts.length >= 4) {
+    subTexts[1].textContent = PN[PER];
+    subTexts[2].textContent = PN[PER];
+    subTexts[3].textContent = 'Periode terpilih';
+  }
+
   document.getElementById('gang').innerHTML=
     '<div class="sc"><div class="sl">Pemasukan</div><div class="sv G" style="font-size:17px">'+fRp(tM)+'</div></div>'
     +'<div class="sc"><div class="sl">Pengeluaran</div><div class="sv R" style="font-size:17px">'+fRp(tK)+'</div></div>'
