@@ -69,10 +69,13 @@ textarea{min-height:68px;resize:vertical}
 .abh h3{font-size:13px;font-weight:700}.abh p{font-size:11px;opacity:.7}
 .abb{padding:14px 18px;display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 
-/* TABS */
-.tabs{display:flex;gap:3px;margin-bottom:14px;background:#fff;padding:4px;border-radius:var(--RS);border:1px solid var(--BD);width:fit-content}
+/* TABS & DIGITAL BUTTON NAVIGATION */
+.nav-container{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.tabs{display:flex;gap:3px;background:#fff;padding:4px;border-radius:var(--RS);border:1px solid var(--BD);width:fit-content}
 .tb{padding:7px 16px;border-radius:5px;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--TA);transition:all .15s}
 .tb.on{background:var(--H);color:#fff}
+.btn-digi{background:linear-gradient(135deg, var(--B), #2573c4);color:#fff;font-size:12px;box-shadow:0 2px 6px rgba(55,138,221,.3)}
+.btn-digi:hover{background:#2573c4}
 
 /* TABLE */
 .tw{background:#fff;border-radius:var(--RA);border:1px solid var(--BD);overflow:hidden}
@@ -111,7 +114,7 @@ td{padding:11px 14px;vertical-align:middle}
 
 /* AUTOCOMPLETE */
 .sw{position:relative}
-#nsug{display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1.5px solid var(--BD);border-radius:var(--RS);box-shadow:0 8px 20px rgba(0,0,0,.12);max-height:190px;overflow-y:auto;margin-top:2px}
+#nsug, #nsug-pay{display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1.5px solid var(--BD);border-radius:var(--RS);box-shadow:0 8px 20px rgba(0,0,0,.12);max-height:190px;overflow-y:auto;margin-top:2px}
 .si{display:flex;align-items:center;gap:9px;padding:8px 13px;cursor:pointer;transition:background .1s;font-size:12px;border-bottom:1px solid rgba(0,0,0,.04)}
 .si:last-child{border-bottom:none}
 .si:hover,.si.fc{background:var(--HM)}
@@ -133,6 +136,12 @@ td{padding:11px 14px;vertical-align:middle}
 .lbox input{margin-top:8px;font-size:11px;font-family:monospace;background:#fff;color:#333;padding:6px 10px;border:1px solid #ccc;border-radius:6px}
 .nbox{background:var(--YM);border-radius:var(--RS);padding:11px 13px;font-size:11px;color:#633806;margin-top:11px;line-height:1.6}
 .nbox ol{margin:7px 0 0 15px}.nbox li{margin-bottom:2px}
+
+/* DUMMY BOX STYLES */
+.dummy-info{background:var(--GM);border-radius:var(--RS);padding:12px;margin-bottom:14px;font-size:12px;border:1px dashed var(--BD)}
+.dummy-qris{text-align:center;margin:10px 0;background:#fff;padding:10px;border-radius:6px;display:inline-block;width:100%}
+.qris-placeholder{width:130px;height:130px;background:#ddd;margin:0 auto;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:var(--TA);border:2px solid #333;position:relative}
+.qris-placeholder::before{content:'QRIS RT 2 DUMMY';text-align:center}
 
 footer{text-align:center;padding:18px;font-size:11px;color:var(--TA);border-top:1px solid var(--BD);margin-top:14px}
 footer a{color:var(--GR)}
@@ -216,6 +225,51 @@ footer a{color:var(--GR)}
   </div>
 </div>
 
+<!-- MODAL PEMBAYARAN & KONFIRMASI DIGITAL (NEW) -->
+<div class="ov" id="m-digital">
+  <div class="mb" style="width:420px">
+    <h2>Pembayaran Digital RT 2</h2>
+    <div class="sub">Silakan transfer via Bank atau Scan QRIS di bawah ini.</div>
+    
+    <div class="dummy-info">
+      <strong>Metode 1: Transfer Bank (Dummy)</strong><br>
+      Bank: <b>Bank Mandiri / BCA</b><br>
+      No. Rekening: <code style="font-family:'DM Mono'; font-weight:700">123-456789-000</code><br>
+      A.N: <b>Kas Bendahara RT 2</b>
+    </div>
+
+    <div class="dummy-info" style="text-align:center">
+      <strong>Metode 2: Scan QRIS (Dummy)</strong>
+      <div class="dummy-qris">
+        <div class="qris-placeholder"></div>
+      </div>
+    </div>
+
+    <hr style="border:none; border-top:1px dashed var(--BD); margin:14px 0">
+    <h3 style="font-size:13px; font-weight:700; margin-bottom:8px">Form Konfirmasi Transfer</h3>
+    
+    <div class="fi sw">
+      <label>Nama Warga</label>
+      <input type="text" id="p-nm" placeholder="Ketik atau pilih nama Anda..." autocomplete="off"
+        oninput="showSugPay(this.value)" onfocus="showSugPay(this.value)" onkeydown="navSugPay(event)">
+      <div id="nsug-pay"></div>
+    </div>
+    <div class="fi">
+      <label>Jumlah Transfer (Rp)</label>
+      <input type="number" id="p-nom" placeholder="cth: 20000" min="0">
+    </div>
+    <div class="fi">
+      <label>Keterangan Tambahan</label>
+      <textarea id="p-ket" placeholder="cth: Bayar Iuran Bulan Juni & Juli"></textarea>
+    </div>
+
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-digital')">Tutup</button>
+      <button class="btn bp" style="background:var(--B)" onclick="kirimKonfirmasiWA()">Kirim via WA</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL SETUP -->
 <div class="ov" id="m-setup">
   <div class="mb" style="width:460px">
@@ -276,11 +330,14 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tb on" onclick="tab('trx',this)">Transaksi</button>
-    <button class="tb" onclick="tab('warga',this)">Warga</button>
-    <button class="tb" onclick="tab('grafik',this)">Ringkasan</button>
+  <!-- NAVIGATION TABS & DIGITAL PAYMENT BUTTON -->
+  <div class="nav-container">
+    <div class="tabs">
+      <button class="tb on" onclick="tab('trx',this)">Transaksi</button>
+      <button class="tb" onclick="tab('warga',this)">Warga</button>
+      <button class="tb" onclick="tab('grafik',this)">Ringkasan</button>
+    </div>
+    <button class="btn btn-digi" onclick="bukaDigitalPay()">💳 Bayar Digital / QRIS</button>
   </div>
 
   <!-- TAB: TRANSAKSI -->
@@ -360,15 +417,10 @@ footer a{color:var(--GR)}
 <script>
 // ================================================================
 //  KONFIGURASI — ISI DI SINI, LALU PUSH KE GITHUB
-//  Warga tidak perlu setting apapun, langsung lihat data
 // ================================================================
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqK7DveMlL3nlitoOXTMQpz1vJ41Z8FmNIXhWo5NtL2We3Wqcje8VoFnGN9NszGvG1/exec';  // <-- PASTE URL Apps Script Anda di sini
-var ADMIN_PASS = '123890';  // <-- PASTE password bendahara di sini
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqK7DveMlL3nlitoOXTMQpz1vJ41Z8FmNIXhWo5NtL2We3Wqcje8VoFnGN9NszGvG1/exec';
+var ADMIN_PASS = '123890';
 
-// ================================================================
-//  SISTEM FALLBACK (jangan diubah)
-//  Urutan prioritas: SCRIPT_URL hardcode > localStorage > URL hash
-// ================================================================
 (function(){
   var h=window.location.hash.slice(1), p=new URLSearchParams(h);
   if(p.get('url')) localStorage.setItem('rt_u',p.get('url'));
@@ -382,17 +434,12 @@ var CFG={
   get pw(){  return (ADMIN_PASS&&ADMIN_PASS!=='')?ADMIN_PASS:(localStorage.getItem('rt_p')||'rt2admin'); }
 };
 
-// ================================================================
-var ADMIN=false, TRX=[], WARGA=[], TIPE='M', SG_IDX=-1;
+var ADMIN=false, TRX=[], WARGA=[], TIPE='M', SG_IDX=-1, SG_PAY_IDX=-1;
 var CB=null, CL=null, PER='minggu';
 
-// ================================================================
-//  INIT
-// ================================================================
 window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('f-tgl').value=new Date().toISOString().split('T')[0];
 
-  // Logo klik 5x -> login
   var clk=0,tmr;
   document.getElementById('logo').addEventListener('click',function(){
     clearTimeout(tmr); clk++;
@@ -400,14 +447,13 @@ window.addEventListener('DOMContentLoaded',function(){
     tmr=setTimeout(function(){clk=0;},2000);
   });
 
-  // Tutup autocomplete saat klik luar
   document.addEventListener('click',function(e){
     if(!e.target.closest('#f-nm')&&!e.target.closest('#nsug'))
       document.getElementById('nsug').style.display='none';
+    if(!e.target.closest('#p-nm')&&!e.target.closest('#nsug-pay'))
+      document.getElementById('nsug-pay').style.display='none';
   });
 
-  // Load data — selalu, tidak peduli apakah URL ada atau tidak
-  // Jika URL kosong, tampilkan panduan setup
   loadData();
 });
 
@@ -497,7 +543,6 @@ async function loadData(){
       TRX=json.transaksi||json.data||[];
       WARGA=json.warga||[];
       renderTrx(TRX); 
-      // Inisialisasi penampilan awal data ringkasan atas menyesuaikan periode aktif saat data selesai dimuat
       if (document.querySelector('.tabs .tb.on').textContent === 'Ringkasan') {
         renderGrafik(TRX);
       } else {
@@ -560,7 +605,7 @@ function cari(q){
 }
 
 // ================================================================
-//  STATS (STANDAR KETIKA DI LUAR TAB RINGKASAN)
+//  STATS
 // ================================================================
 function renderStats(data){
   var now=new Date(),m=now.getMonth(),y=now.getFullYear();
@@ -662,7 +707,7 @@ async function hapusWarga(btn,nama){
 }
 
 // ================================================================
-//  AUTOCOMPLETE
+//  AUTOCOMPLETE (FORM TRANSAKSI)
 // ================================================================
 function showSug(q){
   var box=document.getElementById('nsug');
@@ -699,6 +744,81 @@ function navSug(e){
 }
 
 // ================================================================
+//  AUTOCOMPLETE (FORM PEMBAYARAN DIGITAL) (NEW)
+// ================================================================
+function showSugPay(q){
+  var box=document.getElementById('nsug-pay');
+  var list=WARGA.slice();
+  var ql=q.toLowerCase().trim();
+  var fil=list.filter(function(w){return !ql||w.nama.toLowerCase().includes(ql);});
+  SG_PAY_IDX=-1;
+  if(!list.length){box.style.display='none';return;}
+  var h=fil.map(function(w){
+    var ini=w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
+    return '<div class="si" onmousedown="pilihPay(\''+w.nama.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'
+      +'<div class="sav" style="background:'+wClr(w.nama)+'">'+ini+'</div>'
+      +'<span>'+x(w.nama)+'</span></div>';
+  }).join('');
+  if(ql&&!fil.find(function(w){return w.nama.toLowerCase()===ql;}))
+    h+='<div class="si" style="color:var(--TA);font-style:italic" onmousedown="pilihPay(\''+q.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'
+      +'Gunakan "'+x(q)+'"</div>';
+  box.innerHTML=h; box.style.display=h?'block':'none';
+}
+function pilihPay(n){
+  document.getElementById('p-nm').value=n;
+  document.getElementById('nsug-pay').style.display='none';
+  if(!document.getElementById('p-nom').value)
+    document.getElementById('p-nom').value=20000;
+}
+function navSugPay(e){
+  var items=document.getElementById('nsug-pay').querySelectorAll('.si');
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){e.preventDefault();SG_PAY_IDX=Math.min(SG_PAY_IDX+1,items.length-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();SG_PAY_IDX=Math.max(SG_PAY_IDX-1,0);}
+  else if(e.key==='Enter'&&SG_PAY_IDX>=0){e.preventDefault();items[SG_PAY_IDX].dispatchEvent(new MouseEvent('mousedown'));return;}
+  else if(e.key==='Escape'){document.getElementById('nsug-pay').style.display='none';return;}
+  items.forEach(function(el,i){el.classList.toggle('fc',i===SG_PAY_IDX);});
+}
+
+// ================================================================
+//  FITUR PEMBAYARAN DIGITAL & REDIRECT WA (NEW)
+// ================================================================
+function bukaDigitalPay(){
+  document.getElementById('p-nm').value='';
+  document.getElementById('p-nom').value='';
+  document.getElementById('p-ket').value='';
+  document.getElementById('nsug-pay').style.display='none';
+  om('m-digital');
+  setTimeout(function(){document.getElementById('p-nm').focus();},150);
+}
+function kirimKonfirmasiWA(){
+  var nama = document.getElementById('p-nm').value.trim();
+  var nominal = document.getElementById('p-nom').value.trim();
+  var keterangan = document.getElementById('p-ket').value.trim();
+
+  if(!nama || !nominal){
+    toast('Nama dan Jumlah Transfer wajib diisi!','err');
+    return;
+  }
+
+  var formatRupiah = 'Rp ' + Number(nominal).toLocaleString('id-ID');
+  
+  // Kalimat pesan otomatis tergenerate
+  var teks = "*KONFIRMASI PEMBAYARAN DIGITAL SR JL.JALAK SUREN*\n\n"
+           + "Halo Bendahara, saya telah melakukan pembayaran non-tunai:\n"
+           + "• *Nama Warga* : " + nama + "\n"
+           + "• *Jumlah* : " + formatRupiah + "\n"
+           + "• *Keterangan* : " + (keterangan ? keterangan : '-') + "\n\n"
+           + "Mohon untuk diperiksa dan dicatat ke dalam sistem kas SR JL.JALAK SUREN. Terima kasih!";
+
+  var noWA = "6289636041363"; // Format internasional (ganti 08 menjadi 62)
+  var urlWA = "https://api.whatsapp.com/send?phone=" + noWA + "&text=" + encodeURIComponent(teks);
+  
+  cm('m-digital');
+  window.open(urlWA, '_blank');
+}
+
+// ================================================================
 //  FORM TRANSAKSI
 // ================================================================
 function bukaFormTrx(){
@@ -726,7 +846,6 @@ async function simpanTrx(){
   var bt=document.getElementById('bt-save');
   bt.disabled=true; bt.textContent='Menyimpan...';
 
-  // Optimistic UI — langsung tampil
   var s0=TRX.length?Number(TRX[TRX.length-1].saldo):0;
   var s1=TIPE==='M'?s0+nom:s0-nom;
   var tmp={id:'tmp-'+Date.now(),tanggal:tgl,jenis:(TIPE==='M'?'masuk':'keluar'),nama:nm,nominal:nom,keterangan:ket,kategori:kat,saldo:s1};
@@ -836,19 +955,16 @@ function renderGrafik(data){
     borderWidth:2.5,pointBackgroundColor:'#378ADD',pointRadius:4,fill:true,tension:0.35
   }]},options:bo});
 
-  // Hitung total kumulatif berdasarkan filter periode aktif
   var tM=fil.filter(function(r){return r.jenis==='masuk';}).reduce(function(a,b){return a+Number(b.nominal);},0);
   var tK=fil.filter(function(r){return r.jenis==='keluar';}).reduce(function(a,b){return a+Number(b.nominal);},0);
-  var sd=data.length?Number(data[data.length-1].saldo):0; // Saldo riil saat ini tetap akumulasi akhir dari seluruh waktu
+  var sd=data.length?Number(data[data.length-1].saldo):0; 
   var net=tM-tK;
 
-  // Memperbarui 4 Menu Card Utama di Bagian Paling Atas secara dinamis
   document.getElementById('s0').textContent=fRp(sd);
   document.getElementById('s1').textContent=fRp(tM);
   document.getElementById('s2').textContent=fRp(tK);
   document.getElementById('s3').textContent=fil.length;
 
-  // Menyesuaikan teks keterangan di bawah sub-menu atas
   var subTexts = document.querySelectorAll('.sc .ss');
   if(subTexts.length >= 4) {
     subTexts[1].textContent = PN[PER];
@@ -896,7 +1012,6 @@ function wClr(n){
   return c[Math.abs(h)%c.length];
 }
 
-// Auto refresh 60 detik
 setInterval(loadData,60000);
 </script>
 </body>
