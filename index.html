@@ -41,6 +41,7 @@ textarea{min-height:68px;resize:vertical}
 .bp{background:var(--H);color:#fff;width:100%}.bp:hover{background:var(--HG)}
 .bs{background:var(--GM);color:var(--T)}.bs:hover{background:#D5D3CB}
 .bd{background:var(--RM);color:var(--R)}
+.bw{background:var(--YM);color:#854D0E;border:1px solid #FDE68A}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn:active:not(:disabled){transform:scale(.97)}
 .bsm{padding:5px 11px;font-size:11px;border-radius:6px}
@@ -106,7 +107,7 @@ td{padding:11px 14px;vertical-align:middle}
 
 /* WARGA */
 .wg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;padding:14px}
-.wc{background:var(--GM);border-radius:var(--RS);padding:11px 13px;display:flex;align-items:center;gap:9px}
+.wc{background:var(--GM);border-radius:var(--RS);padding:11px 13px;display:flex;align-items:center;gap:9px;position:relative}
 .wa{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .wn{font-size:12px;font-weight:700;line-height:1.3}
 .wL{color:var(--H);font-size:10px;font-weight:700}.wB{color:var(--R);font-size:10px;font-weight:700}
@@ -137,11 +138,8 @@ td{padding:11px 14px;vertical-align:middle}
 .nbox{background:var(--YM);border-radius:var(--RS);padding:11px 13px;font-size:11px;color:#633806;margin-top:11px;line-height:1.6}
 .nbox ol{margin:7px 0 0 15px}.nbox li{margin-bottom:2px}
 
-/* DUMMY BOX STYLES */
-.dummy-info{background:var(--GM);border-radius:var(--RS);padding:12px;margin-bottom:14px;font-size:12px;border:1px dashed var(--BD)}
-.dummy-qris{text-align:center;margin:10px 0;background:#fff;padding:10px;border-radius:6px;display:inline-block;width:100%}
-.qris-placeholder{width:130px;height:130px;background:#ddd;margin:0 auto;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:var(--TA);border:2px solid #333;position:relative}
-.qris-placeholder::before{content:'QRIS Jalak Suren DUMMY';text-align:center}
+/* BANK INFO STYLES */
+.bank-info{background:var(--HM);border-radius:var(--RS);padding:14px;margin-bottom:14px;font-size:12px;border:1.5px solid var(--H)}
 
 footer{text-align:center;padding:18px;font-size:11px;color:var(--TA);border-top:1px solid var(--BD);margin-top:14px}
 footer a{color:var(--GR)}
@@ -225,24 +223,17 @@ footer a{color:var(--GR)}
   </div>
 </div>
 
-<!-- MODAL PEMBAYARAN & KONFIRMASI DIGITAL (NEW) -->
+<!-- MODAL PEMBAYARAN DIGITAL -->
 <div class="ov" id="m-digital">
   <div class="mb" style="width:420px">
-    <h2>Pembayaran Digital Jalak Suren</h2>
-    <div class="sub">Silakan transfer via Bank atau Scan QRIS di bawah ini.</div>
+    <h2>Pembayaran Kas Jalak Suren</h2>
+    <div class="sub">Silakan lakukan transfer ke rekening resmi di bawah ini.</div>
     
-    <div class="dummy-info">
-      <strong>Metode 1: Transfer Bank (Dummy)</strong><br>
-      Bank: <b>Bank Mandiri / BCA</b><br>
-      No. Rekening: <code style="font-family:'DM Mono'; font-weight:700">123-456789-000</code><br>
-      A.N: <b>Kas Bendahara Jalak Suren</b>
-    </div>
-
-    <div class="dummy-info" style="text-align:center">
-      <strong>Metode 2: Scan QRIS (Dummy)</strong>
-      <div class="dummy-qris">
-        <div class="qris-placeholder"></div>
-      </div>
+    <div class="bank-info">
+      <strong>Pembayaran Via Transfer Bank:</strong><br>
+      Bank: <b>SeaBank</b><br>
+      Atas Nama: <b>Andri Purwanto</b><br>
+      No. Rekening: <code style="font-family:'DM Mono'; font-weight:700; font-size:14px; color:var(--HG)">901519599077</code>
     </div>
 
     <hr style="border:none; border-top:1px dashed var(--BD); margin:14px 0">
@@ -260,7 +251,7 @@ footer a{color:var(--GR)}
     </div>
     <div class="fi">
       <label>Keterangan Tambahan</label>
-      <textarea id="p-ket" placeholder="cth: Bayar Iuran Bulan Juni & Juli"></textarea>
+      <textarea id="p-ket" placeholder="cth: Bayar Iuran Bulan Ini"></textarea>
     </div>
 
     <div class="fa">
@@ -325,6 +316,7 @@ footer a{color:var(--GR)}
     <div class="abh"><h3>Panel Bendahara</h3><p>Login sebagai admin. Hanya Anda yang dapat menambah data.</p></div>
     <div class="abb">
       <button class="btn bp" style="width:auto" onclick="bukaFormTrx()">+ Tambah Transaksi</button>
+      <button class="btn bw" style="width:auto" onclick="kirimPengingatWargaBelumBayar()">📲 Pengingat WA Warga Belum Bayar</button>
       <button class="btn bs" style="width:auto" onclick="bukaSetup()">Konfigurasi</button>
       <button class="btn bd bsm" onclick="logout()">Keluar</button>
     </div>
@@ -337,7 +329,7 @@ footer a{color:var(--GR)}
       <button class="tb" onclick="tab('warga',this)">Warga</button>
       <button class="tb" onclick="tab('grafik',this)">Ringkasan</button>
     </div>
-    <button class="btn btn-digi" onclick="bukaDigitalPay()">💳 Bayar Digital / QRIS</button>
+    <button class="btn btn-digi" onclick="bukaDigitalPay()">💳 Transfer Bank (SeaBank)</button>
   </div>
 
   <!-- TAB: TRANSAKSI -->
@@ -362,7 +354,10 @@ footer a{color:var(--GR)}
   <div id="tab-warga" class="tw" style="display:none">
     <div class="th2">
       <h3>Daftar Warga Jalak Suren</h3>
-      <span style="font-size:11px;color:var(--TA)">Iuran: Rp 20.000 / bulan</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:var(--TA)">Iuran: Rp 20.000 / bulan</span>
+        <button id="btn-remind-warga" class="btn bw bsm" style="display:none" onclick="kirimPengingatWargaBelumBayar()">📲 Pengingat WA Otomatis</button>
+      </div>
     </div>
     <div class="wg" id="wg"></div>
   </div>
@@ -473,6 +468,7 @@ function login(){
     document.getElementById('badm').style.display='block';
     document.getElementById('badm').classList.add('on');
     document.getElementById('th-aksi').style.display='';
+    document.getElementById('btn-remind-warga').style.display='inline-block';
     renderTrx(TRX); toast('Login berhasil!','ok');
   } else document.getElementById('lerr').style.display='block';
 }
@@ -482,6 +478,7 @@ function logout(){
   document.getElementById('badm').classList.remove('on');
   document.getElementById('badm').style.display='none';
   document.getElementById('th-aksi').style.display='none';
+  document.getElementById('btn-remind-warga').style.display='none';
   renderTrx(TRX); toast('Keluar dari mode admin');
 }
 
@@ -649,7 +646,7 @@ function renderKat(data){
 }
 
 // ================================================================
-//  WARGA
+//  WARGA & OTOMATIS PENGINGAT WA
 // ================================================================
 function renderWarga(){
   var now=new Date();
@@ -674,6 +671,51 @@ function renderWarga(){
       +(ADMIN?'<div class="wc wa2" onclick="addWarga()">+ Tambah Warga</div>':'');
   }
   document.getElementById('wg').innerHTML=html;
+}
+
+// FITUR PENGINGAT WA OTOMATIS SETELAH TANGGAL 10
+function kirimPengingatWargaBelumBayar(){
+  var now = new Date();
+  var tanggal = now.getDate();
+  
+  if (tanggal <= 10) {
+    alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
+    return;
+  }
+
+  var bulanNama = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  
+  // Cari warga yang belum bayar
+  var belumBayar = WARGA.filter(function(w){
+    return !TRX.some(function(r){
+      return r.jenis==='masuk' && r.kategori==='Iuran'
+        && r.nama.toLowerCase().includes(w.nama.toLowerCase())
+        && new Date(r.tanggal).getMonth() === now.getMonth();
+    });
+  });
+
+  if(belumBayar.length === 0){
+    toast('Luar biasa! Semua warga sudah membayar iuran bulan ini.', 'ok');
+    return;
+  }
+
+  var daftarNama = belumBayar.map(function(w, idx){ return (idx+1) + ". " + w.nama; }).join('\n');
+
+  var teks = "*PENGINGAT / REMINDER IURAN KAS JALAK SUREN*\n"
+           + "Periode: " + bulanNama + "\n\n"
+           + "Yth. Bapak/Ibu Warga Jalak Suren,\n"
+           + "Mengingatkan kembali bahwa jatuh tempo pembayaran iuran kas bulanan (Rp 20.000) adalah tanggal 10.\n\n"
+           + "Berikut adalah daftar warga yang dicatat *belum mengonfirmasi* pembayaran bulan ini:\n"
+           + daftarNama + "\n\n"
+           + "Pembayaran dapat ditransfer via **SeaBank**:\n"
+           + "• No. Rekening: *901519599077*\n"
+           + "• A.N: *Andri Purwanto*\n\n"
+           + "Atau melalui tautan website resmi kas:\n"
+           + "👉 https://apscorp.github.io/kasjalaksuren/\n\n"
+           + "Jika Bapak/Ibu sudah melakukan pembayaran, mohon konfirmasi ke Bendahara. Terima kasih! 🙏";
+
+  var urlWA = "https://api.whatsapp.com/send?text=" + encodeURIComponent(teks);
+  window.open(urlWA, '_blank');
 }
 
 async function addWarga(){
@@ -744,7 +786,7 @@ function navSug(e){
 }
 
 // ================================================================
-//  AUTOCOMPLETE (FORM PEMBAYARAN DIGITAL) (NEW)
+//  AUTOCOMPLETE (FORM PEMBAYARAN DIGITAL)
 // ================================================================
 function showSugPay(q){
   var box=document.getElementById('nsug-pay');
@@ -781,7 +823,7 @@ function navSugPay(e){
 }
 
 // ================================================================
-//  FITUR PEMBAYARAN DIGITAL & REDIRECT WA (NEW)
+//  FITUR PEMBAYARAN DIGITAL & REDIRECT WA
 // ================================================================
 function bukaDigitalPay(){
   document.getElementById('p-nm').value='';
@@ -803,15 +845,14 @@ function kirimKonfirmasiWA(){
 
   var formatRupiah = 'Rp ' + Number(nominal).toLocaleString('id-ID');
   
-  // Kalimat pesan otomatis tergenerate
-  var teks = "*KONFIRMASI PEMBAYARAN DIGITAL SR JL.JALAK SUREN*\n\n"
-           + "Halo Bendahara, saya telah melakukan pembayaran non-tunai:\n"
+  var teks = "*KONFIRMASI PEMBAYARAN TRANSFER SEABANK*\n\n"
+           + "Halo Bendahara, saya telah melakukan pembayaran iuran via SeaBank:\n"
            + "• *Nama Warga* : " + nama + "\n"
            + "• *Jumlah* : " + formatRupiah + "\n"
            + "• *Keterangan* : " + (keterangan ? keterangan : '-') + "\n\n"
            + "Mohon untuk diperiksa dan dicatat ke dalam sistem kas SR JL.JALAK SUREN. Terima kasih!";
 
-  var noWA = "6289636041363"; // Format internasional (ganti 08 menjadi 62)
+  var noWA = "6289636041363"; 
   var urlWA = "https://api.whatsapp.com/send?phone=" + noWA + "&text=" + encodeURIComponent(teks);
   
   cm('m-digital');
