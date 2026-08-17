@@ -199,7 +199,7 @@ footer a{color:var(--GR)}
     </div>
     <div class="row2">
       <div class="fi"><label>Nominal (Rp)</label>
-        <input type="number" id="f-nom" placeholder="20000" min="0"></div>
+        <input type="number" id="f-nom" placeholder="30000" min="0"></div>
       <div class="fi"><label>Tanggal</label>
         <input type="date" id="f-tgl"></div>
     </div>
@@ -247,7 +247,7 @@ footer a{color:var(--GR)}
     </div>
     <div class="fi">
       <label>Jumlah Transfer (Rp)</label>
-      <input type="number" id="p-nom" placeholder="cth: 20000" min="0">
+      <input type="number" id="p-nom" placeholder="cth: 30000" min="0">
     </div>
     <div class="fi">
       <label>Keterangan Tambahan</label>
@@ -773,7 +773,7 @@ function pilih(n){
   document.getElementById('f-nm').value=n;
   document.getElementById('nsug').style.display='none';
   if(document.getElementById('f-kat').value==='Iuran'&&!document.getElementById('f-nom').value)
-    document.getElementById('f-nom').value=20000;
+    document.getElementById('f-nom').value=30000;
 }
 function navSug(e){
   var items=document.getElementById('nsug').querySelectorAll('.si');
@@ -810,7 +810,7 @@ function pilihPay(n){
   document.getElementById('p-nm').value=n;
   document.getElementById('nsug-pay').style.display='none';
   if(!document.getElementById('p-nom').value)
-    document.getElementById('p-nom').value=20000;
+    document.getElementById('p-nom').value=30000;
 }
 function navSugPay(e){
   var items=document.getElementById('nsug-pay').querySelectorAll('.si');
