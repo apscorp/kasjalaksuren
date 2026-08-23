@@ -200,11 +200,11 @@ footer a{color:var(--GR)}
     <div class="row2">
       <div class="fi"><label>Nominal (Rp)</label>
         <input type="number" id="f-nom" placeholder="30000" min="0"></div>
-      <div class="fi"><label>Tanggal</label>
+      <div class="fi"><label>Tanggal Bayar</label>
         <input type="date" id="f-tgl"></div>
     </div>
-    <div class="fi"><label>Keterangan</label>
-      <textarea id="f-ket" placeholder="cth: Iuran bulan Juni / Beli cat pagar..."></textarea></div>
+    <div class="fi"><label>Keterangan Opsional</label>
+      <textarea id="f-ket" placeholder="cth: Catatan khusus jika ada..."></textarea></div>
     <div class="fi"><label>Kategori</label>
       <select id="f-kat">
         <option value="Iuran">Iuran Bulanan</option>
@@ -646,24 +646,23 @@ function renderKat(data){
 }
 
 // ================================================================
-//  WARGA & OTOMATIS PENGINGAT WA
+//  WARGA & DETEKSI LUNAS (BERDASARKAN BULAN PADA KETERANGAN)
 // ================================================================
 function renderWarga(){
   var now=new Date();
-  var currentMonth = now.getMonth();
-  var currentYear = now.getFullYear();
+  var currentMonthName = now.toLocaleDateString('id-ID', { month: 'long' }).toLowerCase();
+  var currentYear = now.getFullYear().toString();
 
   var html=WARGA.map(function(w){
     var ini=w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
-    // Mengecek apakah warga lunas bulan ini atau bulan-bulan mendatang
+    // Check lunas: jika nama sesuai & keterangan memuat bulan ini dan tahun ini
     var lunas=TRX.some(function(r){
       if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
       if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
       
-      var d = new Date(r.tanggal);
-      return (d.getFullYear() > currentYear) || 
-             (d.getFullYear() === currentYear && d.getMonth() >= currentMonth);
+      var ket = (r.keterangan || '').toLowerCase();
+      return ket.includes(currentMonthName) && ket.includes(currentYear);
     });
 
     return '<div class="wc">'
@@ -686,25 +685,23 @@ function renderWarga(){
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
-  var currentMonth = now.getMonth();
-  var currentYear = now.getFullYear();
+  var currentMonthName = now.toLocaleDateString('id-ID', { month: 'long' }).toLowerCase();
+  var currentYear = now.getFullYear().toString();
   
   if (tanggal <= 10) {
     alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
     return;
   }
 
-  var bulanNama = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  var bulanNamaHeader = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   
-  // Cari warga yang belum bayar bulan ini / belum punya deposit bulan depan
   var belumBayar = WARGA.filter(function(w){
     return !TRX.some(function(r){
       if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
       if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
       
-      var d = new Date(r.tanggal);
-      return (d.getFullYear() > currentYear) || 
-             (d.getFullYear() === currentYear && d.getMonth() >= currentMonth);
+      var ket = (r.keterangan || '').toLowerCase();
+      return ket.includes(currentMonthName) && ket.includes(currentYear);
     });
   });
 
@@ -716,7 +713,7 @@ function kirimPengingatWargaBelumBayar(){
   var daftarNama = belumBayar.map(function(w, idx){ return (idx+1) + ". " + w.nama; }).join('\n');
 
   var teks = "*PENGINGAT / REMINDER IURAN KAS JALAK SUREN*\n"
-           + "Periode: " + bulanNama + "\n\n"
+           + "Periode: " + bulanNamaHeader + "\n\n"
            + "Yth. Bapak/Ibu Warga Jalak Suren,\n"
            + "Mengingatkan kembali bahwa jatuh tempo pembayaran iuran kas bulanan (Rp 30.000) adalah tanggal 10.\n\n"
            + "Berikut adalah daftar warga yang dicatat *belum mengonfirmasi* pembayaran bulan ini:\n"
@@ -874,7 +871,7 @@ function kirimKonfirmasiWA(){
 }
 
 // ================================================================
-//  FORM TRANSAKSI (DENGAN PEMBAGIAN BULAN OTOMATIS FITUR MULTI-BULAN)
+//  FORM TRANSAKSI (TANGGAL SAMA UNTUK SEMUA BARIS IURAN MULTI-BULAN)
 // ================================================================
 function bukaFormTrx(){
   document.getElementById('f-nm').value='';
@@ -901,7 +898,7 @@ async function simpanTrx(){
   var bt=document.getElementById('bt-save');
   bt.disabled=true; bt.textContent='Menyimpan...';
 
-  // LOGIKA MULTI-BULAN / MULTI-TAHUN UNTUK IURAN
+  // LOGIKA MULTI-BULAN: TANGGAL TETAP TANGGAL SAMA SAAT DIBAYARKAN
   var itemsToSave = [];
   var PER_MONTH_FEE = 30000;
 
@@ -910,13 +907,12 @@ async function simpanTrx(){
     var baseDate = new Date(tgl);
 
     for (var i = 0; i < monthsToPay; i++) {
-      var d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
-      var formattedDate = d.toISOString().split('T')[0];
+      var d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
       var monthName = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-      var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran ' + monthName);
+      var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran bulan ' + monthName);
 
       itemsToSave.push({
-        tanggal: formattedDate,
+        tanggal: tgl, // Tanggal transaksi tetap sama saat pembayaran
         jenis: 'masuk',
         nama: nm,
         nominal: PER_MONTH_FEE,
