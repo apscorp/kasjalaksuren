@@ -650,13 +650,22 @@ function renderKat(data){
 // ================================================================
 function renderWarga(){
   var now=new Date();
+  var currentMonth = now.getMonth();
+  var currentYear = now.getFullYear();
+
   var html=WARGA.map(function(w){
     var ini=w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
+    
+    // Mengecek apakah warga lunas bulan ini atau bulan-bulan mendatang
     var lunas=TRX.some(function(r){
-      return r.jenis==='masuk'&&r.kategori==='Iuran'
-        &&r.nama.toLowerCase().includes(w.nama.toLowerCase())
-        &&new Date(r.tanggal).getMonth()===now.getMonth();
+      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+      if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+      
+      var d = new Date(r.tanggal);
+      return (d.getFullYear() > currentYear) || 
+             (d.getFullYear() === currentYear && d.getMonth() >= currentMonth);
     });
+
     return '<div class="wc">'
       +'<div class="wa" style="background:'+wClr(w.nama)+'">'+ini+'</div>'
       +'<div><div class="wn">'+x(w.nama)+'</div>'
@@ -677,6 +686,8 @@ function renderWarga(){
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
+  var currentMonth = now.getMonth();
+  var currentYear = now.getFullYear();
   
   if (tanggal <= 10) {
     alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
@@ -685,12 +696,15 @@ function kirimPengingatWargaBelumBayar(){
 
   var bulanNama = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   
-  // Cari warga yang belum bayar
+  // Cari warga yang belum bayar bulan ini / belum punya deposit bulan depan
   var belumBayar = WARGA.filter(function(w){
     return !TRX.some(function(r){
-      return r.jenis==='masuk' && r.kategori==='Iuran'
-        && r.nama.toLowerCase().includes(w.nama.toLowerCase())
-        && new Date(r.tanggal).getMonth() === now.getMonth();
+      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+      if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+      
+      var d = new Date(r.tanggal);
+      return (d.getFullYear() > currentYear) || 
+             (d.getFullYear() === currentYear && d.getMonth() >= currentMonth);
     });
   });
 
@@ -860,7 +874,7 @@ function kirimKonfirmasiWA(){
 }
 
 // ================================================================
-//  FORM TRANSAKSI
+//  FORM TRANSAKSI (DENGAN PEMBAGIAN BULAN OTOMATIS FITUR MULTI-BULAN)
 // ================================================================
 function bukaFormTrx(){
   document.getElementById('f-nm').value='';
@@ -887,24 +901,83 @@ async function simpanTrx(){
   var bt=document.getElementById('bt-save');
   bt.disabled=true; bt.textContent='Menyimpan...';
 
-  var s0=TRX.length?Number(TRX[TRX.length-1].saldo):0;
-  var s1=TIPE==='M'?s0+nom:s0-nom;
-  var tmp={id:'tmp-'+Date.now(),tanggal:tgl,jenis:(TIPE==='M'?'masuk':'keluar'),nama:nm,nominal:nom,keterangan:ket,kategori:kat,saldo:s1};
-  TRX.push(tmp); renderTrx(TRX); renderStats(TRX);
-  cm('m-trx'); toast('Transaksi disimpan!','ok');
+  // LOGIKA MULTI-BULAN / MULTI-TAHUN UNTUK IURAN
+  var itemsToSave = [];
+  var PER_MONTH_FEE = 30000;
 
-  try{
-    var p=new URLSearchParams({action:'addRow',tanggal:tgl,jenis:(TIPE==='M'?'masuk':'keluar'),nama:nm,nominal:nom,keterangan:ket,kategori:kat});
-    var res=await fetch(CFG.url+'?'+p.toString());
-    var json=JSON.parse(await res.text());
-    if(json.status==='ok'){sync('','Tersimpan '+new Date().toLocaleTimeString('id-ID'));loadData();}
-    else throw new Error(json.message);
-  }catch(e){
-    TRX=TRX.filter(function(r){return r.id!==tmp.id;});
-    renderTrx(TRX); renderStats(TRX);
-    toast('Gagal menyimpan — data dibatalkan','err'); sync('E','Gagal');
-  }finally{bt.disabled=false;bt.textContent='Simpan';}
+  if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
+    var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
+    var baseDate = new Date(tgl);
+
+    for (var i = 0; i < monthsToPay; i++) {
+      var d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+      var formattedDate = d.toISOString().split('T')[0];
+      var monthName = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran ' + monthName);
+
+      itemsToSave.push({
+        tanggal: formattedDate,
+        jenis: 'masuk',
+        nama: nm,
+        nominal: PER_MONTH_FEE,
+        keterangan: autoKet,
+        kategori: kat
+      });
+    }
+
+    var sisaNominal = nom % PER_MONTH_FEE;
+    if (sisaNominal > 0) {
+      itemsToSave.push({
+        tanggal: tgl,
+        jenis: 'masuk',
+        nama: nm,
+        nominal: sisaNominal,
+        keterangan: (ket ? ket + ' ' : '') + '(Sisa pembayaran/kelebihan)',
+        kategori: kat
+      });
+    }
+  } else {
+    itemsToSave.push({
+      tanggal: tgl,
+      jenis: (TIPE === 'M' ? 'masuk' : 'keluar'),
+      nama: nm,
+      nominal: nom,
+      keterangan: ket,
+      kategori: kat
+    });
+  }
+
+  // Simpan ke database Apps Script
+  try {
+    for (var idx = 0; idx < itemsToSave.length; idx++) {
+      var item = itemsToSave[idx];
+      var p = new URLSearchParams({
+        action: 'addRow',
+        tanggal: item.tanggal,
+        jenis: item.jenis,
+        nama: item.nama,
+        nominal: item.nominal,
+        keterangan: item.keterangan,
+        kategori: item.kategori
+      });
+      var res = await fetch(CFG.url + '?' + p.toString());
+      var json = JSON.parse(await res.text());
+      if (json.status !== 'ok') throw new Error(json.message);
+    }
+
+    cm('m-trx');
+    toast('Berhasil menyimpan ' + itemsToSave.length + ' transaksi iuran!', 'ok');
+    sync('', 'Tersimpan ' + new Date().toLocaleTimeString('id-ID'));
+    loadData();
+  } catch(e) {
+    toast('Gagal menyimpan transaksi', 'err');
+    sync('E', 'Gagal');
+  } finally {
+    bt.disabled = false;
+    bt.textContent = 'Simpan';
+  }
 }
+
 async function hapus(i,id){
   if(!confirm('Hapus transaksi ini?')) return;
   sync('L','Menghapus...');
