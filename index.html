@@ -111,6 +111,7 @@ td{padding:11px 14px;vertical-align:middle}
 .wa{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .wn{font-size:12px;font-weight:700;line-height:1.3}
 .wL{color:var(--H);font-size:10px;font-weight:700}.wB{color:var(--R);font-size:10px;font-weight:700}
+.wT{color:#B91C1C;font-size:10px;font-weight:800} /* Style untuk tunggakan >= 2 bulan */
 .wa2{cursor:pointer;border:2px dashed var(--BD);background:transparent;justify-content:center;color:var(--TA);font-size:12px;font-weight:700}
 
 /* AUTOCOMPLETE */
@@ -646,47 +647,63 @@ function renderKat(data){
 }
 
 // ================================================================
-//  WARGA & DETEKSI LUNAS (BERDASARKAN BULAN PADA KETERANGAN)
+//  WARGA & DETEKSI TUNGGAKAN
 // ================================================================
 function renderWarga(){
-  var now=new Date();
-  var currentMonthName = now.toLocaleDateString('id-ID', { month: 'long' }).toLowerCase();
+  var now = new Date();
+  var currentMonthIndex = now.getMonth(); // 0 (Jan) sampai 11 (Des)
   var currentYear = now.getFullYear().toString();
+  var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
-  var html=WARGA.map(function(w){
-    var ini=w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
+  var html = WARGA.map(function(w){
+    var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
-    // Check lunas: jika nama sesuai & keterangan memuat bulan ini dan tahun ini
-    var lunas=TRX.some(function(r){
-      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
-      if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
-      
-      var ket = (r.keterangan || '').toLowerCase();
-      return ket.includes(currentMonthName) && ket.includes(currentYear);
-    });
+    // Hitung berapa bulan yang belum dibayar dari Januari s/d Bulan Ini
+    var tunggakanCount = 0;
+    for(var i = 0; i <= currentMonthIndex; i++){
+      var mName = monthNames[i];
+      var isPaid = TRX.some(function(r){
+        if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+        if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+        var ket = (r.keterangan || '').toLowerCase();
+        return ket.includes(mName) && ket.includes(currentYear);
+      });
+      if(!isPaid) tunggakanCount++;
+    }
+
+    var statusHtml = '';
+    if (tunggakanCount === 0) {
+      statusHtml = '<div class="wL">&#10003; Lunas</div>';
+    } else if (tunggakanCount >= 2) {
+      statusHtml = '<div class="wT">&#10007; Nunggak ' + tunggakanCount + ' Bln (Rp ' + (tunggakanCount * 30000).toLocaleString('id-ID') + ')</div>';
+    } else {
+      statusHtml = '<div class="wB">&#10007; Belum bayar</div>';
+    }
 
     return '<div class="wc">'
       +'<div class="wa" style="background:'+wClr(w.nama)+'">'+ini+'</div>'
       +'<div><div class="wn">'+x(w.nama)+'</div>'
-      +'<div class="'+(lunas?'wL':'wB')+'">'+(lunas?'&#10003; Lunas':'&#10007; Belum bayar')+'</div></div>'
+      + statusHtml + '</div>'
       +(ADMIN?'<button onclick="hapusWarga(this,&quot;'+w.nama.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'&quot;)" title="Hapus" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--TA);font-size:16px;padding:2px 6px">&times;</button>':'')
       +'</div>';
   }).join('');
+  
   if(ADMIN) html+='<div class="wc wa2" onclick="addWarga()">+ Tambah Warga</div>';
   if(!WARGA.length){
     html='<div style="grid-column:1/-1;text-align:center;padding:28px;color:var(--TA);font-size:13px">'
       +'Belum ada data warga.'+(ADMIN?' Klik tombol + untuk menambah.':'')+'</div>'
       +(ADMIN?'<div class="wc wa2" onclick="addWarga()">+ Tambah Warga</div>':'');
   }
-  document.getElementById('wg').innerHTML=html;
+  document.getElementById('wg').innerHTML = html;
 }
 
-// FITUR PENGINGAT WA OTOMATIS SETELAH TANGGAL 10
+// FITUR PENGINGAT WA OTOMATIS (TERMASUK INFO TUNGGAKAN)
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
-  var currentMonthName = now.toLocaleDateString('id-ID', { month: 'long' }).toLowerCase();
+  var currentMonthIndex = now.getMonth();
   var currentYear = now.getFullYear().toString();
+  var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
   
   if (tanggal <= 10) {
     alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
@@ -695,28 +712,42 @@ function kirimPengingatWargaBelumBayar(){
 
   var bulanNamaHeader = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   
-  var belumBayar = WARGA.filter(function(w){
-    return !TRX.some(function(r){
-      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
-      if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
-      
-      var ket = (r.keterangan || '').toLowerCase();
-      return ket.includes(currentMonthName) && ket.includes(currentYear);
-    });
+  var daftarBelumBayar = [];
+  WARGA.forEach(function(w){
+    var tunggakanCount = 0;
+    for(var i = 0; i <= currentMonthIndex; i++){
+      var mName = monthNames[i];
+      var isPaid = TRX.some(function(r){
+        if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+        if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+        var ket = (r.keterangan || '').toLowerCase();
+        return ket.includes(mName) && ket.includes(currentYear);
+      });
+      if(!isPaid) tunggakanCount++;
+    }
+    if(tunggakanCount > 0){
+      daftarBelumBayar.push({ nama: w.nama, count: tunggakanCount });
+    }
   });
 
-  if(belumBayar.length === 0){
-    toast('Luar biasa! Semua warga sudah membayar iuran bulan ini.', 'ok');
+  if(daftarBelumBayar.length === 0){
+    toast('Luar biasa! Semua warga sudah membayar iuran tahun ini.', 'ok');
     return;
   }
 
-  var daftarNama = belumBayar.map(function(w, idx){ return (idx+1) + ". " + w.nama; }).join('\n');
+  var daftarNama = daftarBelumBayar.map(function(w, idx){ 
+    var text = (idx+1) + ". " + w.nama;
+    if (w.count >= 2) {
+      text += " *(Tunggakan " + w.count + " Bln: Rp " + (w.count * 30000).toLocaleString('id-ID') + ")*";
+    }
+    return text;
+  }).join('\n');
 
   var teks = "*PENGINGAT / REMINDER IURAN KAS JALAK SUREN*\n"
            + "Periode: " + bulanNamaHeader + "\n\n"
            + "Yth. Bapak/Ibu Warga Jalak Suren,\n"
            + "Mengingatkan kembali bahwa jatuh tempo pembayaran iuran kas bulanan (Rp 30.000) adalah tanggal 10.\n\n"
-           + "Berikut adalah daftar warga yang dicatat *belum mengonfirmasi* pembayaran bulan ini:\n"
+           + "Berikut adalah daftar warga yang dicatat *belum mengonfirmasi* pembayaran:\n"
            + daftarNama + "\n\n"
            + "Pembayaran dapat ditransfer via **SeaBank**:\n"
            + "• No. Rekening: *901519599077*\n"
@@ -898,7 +929,6 @@ async function simpanTrx(){
   var bt=document.getElementById('bt-save');
   bt.disabled=true; bt.textContent='Menyimpan...';
 
-  // LOGIKA MULTI-BULAN: TANGGAL TETAP TANGGAL SAMA SAAT DIBAYARKAN
   var itemsToSave = [];
   var PER_MONTH_FEE = 30000;
 
@@ -912,7 +942,7 @@ async function simpanTrx(){
       var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran bulan ' + monthName);
 
       itemsToSave.push({
-        tanggal: tgl, // <-- Tanggal transaksi dikunci ke tanggal bayar (cth: 2026-08-22)
+        tanggal: tgl,
         jenis: 'masuk',
         nama: nm,
         nominal: PER_MONTH_FEE,
@@ -924,7 +954,7 @@ async function simpanTrx(){
     var sisaNominal = nom % PER_MONTH_FEE;
     if (sisaNominal > 0) {
       itemsToSave.push({
-        tanggal: tgl, // <-- Tanggal sisa nominal juga dikunci ke tanggal bayar
+        tanggal: tgl,
         jenis: 'masuk',
         nama: nm,
         nominal: sisaNominal,
