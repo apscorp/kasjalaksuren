@@ -912,7 +912,7 @@ async function simpanTrx(){
       var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran bulan ' + monthName);
 
       itemsToSave.push({
-        tanggal: tgl, // Tanggal transaksi tetap sama saat pembayaran
+        tanggal: tgl, // <-- Tanggal transaksi dikunci ke tanggal bayar (cth: 2026-08-22)
         jenis: 'masuk',
         nama: nm,
         nominal: PER_MONTH_FEE,
@@ -924,7 +924,7 @@ async function simpanTrx(){
     var sisaNominal = nom % PER_MONTH_FEE;
     if (sisaNominal > 0) {
       itemsToSave.push({
-        tanggal: tgl,
+        tanggal: tgl, // <-- Tanggal sisa nominal juga dikunci ke tanggal bayar
         jenis: 'masuk',
         nama: nm,
         nominal: sisaNominal,
