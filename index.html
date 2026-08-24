@@ -128,10 +128,20 @@ td{padding:11px 14px;vertical-align:middle}
 .ttb.M.on{border-color:var(--H);background:var(--HM);color:var(--HG)}
 .ttb.K.on{border-color:var(--R);background:var(--RM);color:#711f13}
 
-/* GRAFIK */
+/* GRAFIK & REKAP */
 .pb{padding:6px 13px;border-radius:18px;border:1.5px solid var(--BD);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;background:var(--GM);color:var(--TA);transition:all .15s;white-space:nowrap}
 .pb:hover{background:var(--HM);color:var(--HG);border-color:var(--H)}
 .pb.on{background:var(--H);color:#fff;border-color:var(--H)}
+
+/* BREAKDOWN REKAP TABLE STYLING */
+.row-parent{cursor:pointer;font-weight:600}
+.row-parent:hover{background:#f0fdf4 !important}
+.row-detail{display:none;background:#fafafa}
+.row-detail.open{display:table-row}
+.box-detail{padding:10px 14px;background:#f8faf9;border-radius:8px;border:1px solid var(--BD);margin:4px 0}
+.tbl-inner{width:100%;font-size:11px;background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--BD)}
+.tbl-inner th{background:#eef2f0;color:var(--HG);padding:6px 10px;font-size:10px}
+.tbl-inner td{padding:7px 10px;border-bottom:1px solid #f0f0f0}
 
 /* SETUP LINK BOX */
 .lbox{background:var(--HM);border-radius:var(--RS);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--HG);display:none}
@@ -149,6 +159,16 @@ footer a{color:var(--GR)}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast.ok{background:var(--HG)}
 #toast.err{background:#9B2121}
+
+/* PRINT STYLING */
+@media print {
+  header, footer, .tabs, .btn-digi, #abar, .pb, select, button, #toast, .th2 input { display: none !important; }
+  body { background: #fff; color: #000; }
+  .wrap { max-width: 100%; padding: 0; }
+  .tw { border: none; }
+  #tab-rekap { display: block !important; }
+  .row-detail { display: table-row !important; }
+}
 </style>
 </head>
 <body>
@@ -328,7 +348,8 @@ footer a{color:var(--GR)}
     <div class="tabs">
       <button class="tb on" onclick="tab('trx',this)">Transaksi</button>
       <button class="tb" onclick="tab('warga',this)">Warga</button>
-      <button class="tb" onclick="tab('grafik',this)">Ringkasan</button>
+      <button class="tb" onclick="tab('grafik',this)">Ringkasan & Grafik</button>
+      <button class="tb" onclick="tab('rekap',this)">Rekap Laporan</button>
     </div>
     <button class="btn btn-digi" onclick="bukaDigitalPay()">💳 Transfer Bank (SeaBank)</button>
   </div>
@@ -363,19 +384,21 @@ footer a{color:var(--GR)}
     <div class="wg" id="wg"></div>
   </div>
 
-  <!-- TAB: GRAFIK -->
+  <!-- TAB: GRAFIK & RINGKASAN -->
   <div id="tab-grafik" style="display:none">
     <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:14px;font-weight:700">Grafik Keuangan</div>
         <div style="font-size:11px;color:var(--TA)" id="glbl">Minggu ini</div>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
         <button class="pb on" onclick="periode('minggu',this)">Mingguan</button>
         <button class="pb" onclick="periode('bulan',this)">Bulanan</button>
         <button class="pb" onclick="periode('3bulan',this)">3 Bulan</button>
         <button class="pb" onclick="periode('6bulan',this)">6 Bulan</button>
         <button class="pb" onclick="periode('tahun',this)">Tahunan</button>
+        <select id="sel-tahun-grafik" style="width:auto;padding:5px 10px;font-size:11px" onchange="gantiTahunGrafik(this.value)">
+        </select>
       </div>
     </div>
     <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:18px;margin-bottom:14px">
@@ -400,6 +423,53 @@ footer a{color:var(--GR)}
       </div>
     </div>
   </div>
+
+  <!-- TAB: REKAP LAPORAN DATA (DENGAN BREAKDOWN DETAIL) -->
+  <div id="tab-rekap" style="display:none">
+    <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:14px;font-weight:700">Rekap Laporan Keuangan</div>
+        <div style="font-size:11px;color:var(--TA)">Klik baris periode untuk melihat breakdown rincian transaksi</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="rekap-tipe" onchange="renderRekapData()" style="width:auto;padding:6px 10px">
+          <option value="mingguan">Rekap Mingguan</option>
+          <option value="bulanan" selected>Rekap Bulanan</option>
+          <option value="tahunan">Rekap Tahunan</option>
+          <option value="semua">Semua Transaksi</option>
+        </select>
+        <select id="rekap-tahun" onchange="renderRekapData()" style="width:auto;padding:6px 10px">
+        </select>
+        <button class="btn bp" style="width:auto;padding:7px 14px;font-size:11px" onclick="window.print()">🖨️ Cetak / Download Rekap (PDF)</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY REKAP CARD -->
+    <div class="sg" style="margin-bottom:14px">
+      <div class="sc"><div class="sl">Total Rekap Pemasukan</div><div class="sv G" id="rk-in">Rp 0</div></div>
+      <div class="sc"><div class="sl">Total Rekap Pengeluaran</div><div class="sv R" id="rk-out">Rp 0</div></div>
+      <div class="sc"><div class="sl">Selisih (Net Rekap)</div><div class="sv B" id="rk-net">Rp 0</div></div>
+    </div>
+
+    <!-- TABLE REKAP WITH EXPANDABLE BREAKDOWN -->
+    <div class="tw">
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px"></th>
+              <th>Periode / Waktu</th>
+              <th>Total Pemasukan</th>
+              <th>Total Pengeluaran</th>
+              <th>Net (Selisih)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-rekap"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <footer>
@@ -431,7 +501,7 @@ var CFG={
 };
 
 var ADMIN=false, TRX=[], WARGA=[], TIPE='M', SG_IDX=-1, SG_PAY_IDX=-1;
-var CB=null, CL=null, PER='minggu';
+var CB=null, CL=null, PER='minggu', FILTER_TAHUN=new Date().getFullYear();
 
 window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('f-tgl').value=new Date().toISOString().split('T')[0];
@@ -516,7 +586,7 @@ function copyLink(){
 }
 
 // ================================================================
-//  LOAD DATA
+//  LOAD DATA & INISIALISASI TAHUN
 // ================================================================
 async function loadData(){
   if(!CFG.url){
@@ -540,14 +610,17 @@ async function loadData(){
     if(json.status==='ok'){
       TRX=json.transaksi||json.data||[];
       WARGA=json.warga||[];
+      
+      initSelectTahun();
       renderTrx(TRX); 
-      if (document.querySelector('.tabs .tb.on').textContent === 'Ringkasan') {
-        renderGrafik(TRX);
-      } else {
-        renderStats(TRX);
-      }
+      renderStats(TRX);
       renderKat(TRX);
       renderWarga();
+      
+      var activeTab = document.querySelector('.tabs .tb.on').textContent;
+      if (activeTab.includes('Grafik')) renderGrafik(TRX);
+      if (activeTab.includes('Rekap')) renderRekapData();
+
       sync('','Update '+new Date().toLocaleTimeString('id-ID'));
       document.getElementById('lupd').textContent='Update: '+new Date().toLocaleTimeString('id-ID');
       document.getElementById('notice').style.display='none';
@@ -572,6 +645,34 @@ async function loadData(){
       +'<button class="btn bs" style="width:auto" onclick="showLogin()">Setup</button>'
       +'</div></div></td></tr>';
   }
+}
+
+function initSelectTahun(){
+  var setTahun = new Set();
+  var curYr = new Date().getFullYear();
+  setTahun.add(curYr);
+
+  TRX.forEach(function(r){
+    if(r.tanggal){
+      var y = new Date(r.tanggal).getFullYear();
+      if(!isNaN(y)) setTahun.add(y);
+    }
+  });
+
+  var arr = Array.from(setTahun).sort(function(a,b){ return b - a; });
+  
+  var htmlGrafik = arr.map(function(y){ return '<option value="'+y+'">'+y+'</option>'; }).join('');
+  document.getElementById('sel-tahun-grafik').innerHTML = htmlGrafik;
+  document.getElementById('sel-tahun-grafik').value = FILTER_TAHUN;
+
+  var htmlRekap = arr.map(function(y){ return '<option value="'+y+'">Tahun '+y+'</option>'; }).join('');
+  document.getElementById('rekap-tahun').innerHTML = htmlRekap;
+  document.getElementById('rekap-tahun').value = FILTER_TAHUN;
+}
+
+function gantiTahunGrafik(y){
+  FILTER_TAHUN = parseInt(y);
+  renderGrafik(TRX);
 }
 
 // ================================================================
@@ -615,13 +716,6 @@ function renderStats(data){
   document.getElementById('s1').textContent=fRp(tM);
   document.getElementById('s2').textContent=fRp(tK);
   document.getElementById('s3').textContent=data.length;
-  
-  var subTexts = document.querySelectorAll('.sc .ss');
-  if(subTexts.length >= 4) {
-    subTexts[1].textContent = 'Bulan ini';
-    subTexts[2].textContent = 'Bulan ini';
-    subTexts[3].textContent = 'Total semua waktu';
-  }
 }
 
 // ================================================================
@@ -647,21 +741,18 @@ function renderKat(data){
 }
 
 // ================================================================
-//  WARGA & DETEKSI TUNGGAKAN (MULAI AGUSTUS)
+//  WARGA & DETEKSI TUNGGAKAN
 // ================================================================
 function renderWarga(){
   var now = new Date();
   var currentMonthIndex = now.getMonth(); 
   var currentYear = now.getFullYear().toString();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
-
-  // Batas awal pembayaran iuran dimulai dari bulan Agustus (Index 7)
   var START_MONTH_INDEX = 7; 
 
   var html = WARGA.map(function(w){
     var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
-    // Hitung berapa bulan yang belum dibayar dari AGUSTUS s/d Bulan Ini
     var tunggakanCount = 0;
     if (currentMonthIndex >= START_MONTH_INDEX) {
       for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
@@ -702,15 +793,13 @@ function renderWarga(){
   document.getElementById('wg').innerHTML = html;
 }
 
-// FITUR PENGINGAT WA OTOMATIS (DIHITUNG MULAI AGUSTUS)
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
   var currentMonthIndex = now.getMonth();
   var currentYear = now.getFullYear().toString();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
-  
-  var START_MONTH_INDEX = 7; // Mulai Agustus
+  var START_MONTH_INDEX = 7;
 
   if (tanggal <= 10) {
     alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
@@ -718,8 +807,8 @@ function kirimPengingatWargaBelumBayar(){
   }
 
   var bulanNamaHeader = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-  
   var daftarBelumBayar = [];
+
   WARGA.forEach(function(w){
     var tunggakanCount = 0;
     if (currentMonthIndex >= START_MONTH_INDEX) {
@@ -799,9 +888,7 @@ async function hapusWarga(btn,nama){
   }catch(e){toast('Gagal: '+e.message,'err');}
 }
 
-// ================================================================
-//  AUTOCOMPLETE (FORM TRANSAKSI)
-// ================================================================
+// AUTOCOMPLETE FORM TRANSAKSI & PEMBAYARAN
 function showSug(q){
   var box=document.getElementById('nsug');
   var list=WARGA.slice();
@@ -836,9 +923,6 @@ function navSug(e){
   items.forEach(function(el,i){el.classList.toggle('fc',i===SG_IDX);});
 }
 
-// ================================================================
-//  AUTOCOMPLETE (FORM PEMBAYARAN DIGITAL)
-// ================================================================
 function showSugPay(q){
   var box=document.getElementById('nsug-pay');
   var list=WARGA.slice();
@@ -873,9 +957,6 @@ function navSugPay(e){
   items.forEach(function(el,i){el.classList.toggle('fc',i===SG_PAY_IDX);});
 }
 
-// ================================================================
-//  PEMBAYARAN DIGITAL & REDIRECT WA
-// ================================================================
 function bukaDigitalPay(){
   document.getElementById('p-nm').value='';
   document.getElementById('p-nom').value='';
@@ -895,7 +976,6 @@ function kirimKonfirmasiWA(){
   }
 
   var formatRupiah = 'Rp ' + Number(nominal).toLocaleString('id-ID');
-  
   var teks = "*KONFIRMASI PEMBAYARAN TRANSFER SEABANK*\n\n"
            + "Halo Bendahara, saya telah melakukan pembayaran iuran via SeaBank:\n"
            + "• *Nama Warga* : " + nama + "\n"
@@ -910,9 +990,6 @@ function kirimKonfirmasiWA(){
   window.open(urlWA, '_blank');
 }
 
-// ================================================================
-//  FORM TRANSAKSI
-// ================================================================
 function bukaFormTrx(){
   document.getElementById('f-nm').value='';
   document.getElementById('f-nom').value='';
@@ -1030,18 +1107,19 @@ async function hapus(i,id){
 function tab(t,btn){
   document.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
-  ['trx','warga','grafik'].forEach(function(id){
+  ['trx','warga','grafik','rekap'].forEach(function(id){
     document.getElementById('tab-'+id).style.display=id===t?'block':'none';
   });
   if(t==='warga') renderWarga();
   if(t==='grafik') renderGrafik(TRX);
+  if(t==='rekap') renderRekapData();
   if(t==='trx') renderStats(TRX);
 }
 
 // ================================================================
 //  GRAFIK & FILTER PERIODE WAKTU
 // ================================================================
-var PN={'minggu':'Minggu ini','bulan':'Bulan ini','3bulan':'3 bulan terakhir','6bulan':'6 bulan terakhir','tahun':'Tahun ini'};
+var PN={'minggu':'Minggu ini','bulan':'Bulan ini','3bulan':'3 bulan terakhir','6bulan':'6 bulan terakhir','tahun':'Tahun terpilih'};
 function periode(p,btn){
   PER=p;
   document.querySelectorAll('.pb').forEach(function(b){b.classList.remove('on');});
@@ -1049,15 +1127,31 @@ function periode(p,btn){
   document.getElementById('glbl').textContent=PN[p]||p;
   renderGrafik(TRX);
 }
+
 function filPer(data,p){
-  var now=new Date(),from;
-  if(p==='minggu'){from=new Date(now);from.setDate(now.getDate()-6);from.setHours(0,0,0,0);}
-  else if(p==='bulan'){from=new Date(now.getFullYear(),now.getMonth(),1);}
-  else if(p==='3bulan'){from=new Date(now);from.setMonth(now.getMonth()-2);from.setDate(1);from.setHours(0,0,0,0);}
-  else if(p==='6bulan'){from=new Date(now);from.setMonth(now.getMonth()-5);from.setDate(1);from.setHours(0,0,0,0);}
-  else {from=new Date(now.getFullYear(),0,1);}
-  return data.filter(function(r){return new Date(r.tanggal)>=from;});
+  var y = FILTER_TAHUN;
+  return data.filter(function(r){
+    if(!r.tanggal) return false;
+    var d = new Date(r.tanggal);
+    if(d.getFullYear() !== y && p !== '3bulan' && p !== '6bulan') return false;
+
+    var now = new Date();
+    if(p==='minggu'){
+      var from = new Date(now); from.setDate(now.getDate()-6); from.setHours(0,0,0,0);
+      return d >= from;
+    } else if(p==='bulan'){
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    } else if(p==='3bulan'){
+      var from = new Date(now); from.setMonth(now.getMonth()-2); from.setDate(1); from.setHours(0,0,0,0);
+      return d >= from;
+    } else if(p==='6bulan'){
+      var from = new Date(now); from.setMonth(now.getMonth()-5); from.setDate(1); from.setHours(0,0,0,0);
+      return d >= from;
+    }
+    return d.getFullYear() === y;
+  });
 }
+
 function grpData(data,p){
   var g={};
   data.forEach(function(r){
@@ -1065,19 +1159,13 @@ function grpData(data,p){
     if(p==='minggu') k=d.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
     else if(p==='bulan') k='Mgg '+Math.ceil(d.getDate()/7);
     else k=d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
+    
     if(!g[k])g[k]={m:0,k:0};
     if(r.jenis==='masuk')g[k].m+=Number(r.nominal);else g[k].k+=Number(r.nominal);
   });
-  if(p==='minggu'){
-    var now=new Date();
-    for(var i=6;i>=0;i--){
-      var d=new Date(now);d.setDate(now.getDate()-i);
-      var k=d.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
-      if(!g[k])g[k]={m:0,k:0};
-    }
-  }
   return g;
 }
+
 function renderGrafik(data){
   if(!document.getElementById('cbar')) return;
   var fil=filPer(data,PER), grp=grpData(fil,PER);
@@ -1092,11 +1180,13 @@ function renderGrafik(data){
     plugins:{legend:{display:false},tooltip:{callbacks:{label:tp}}},
     scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#888780'}},
       y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10},color:'#888780',callback:tf}}}};
+  
   if(CB)CB.destroy();
   CB=new Chart(document.getElementById('cbar').getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[
     {label:'Pemasukan',data:msk,backgroundColor:'rgba(29,158,117,0.85)',borderRadius:5,borderSkipped:false},
     {label:'Pengeluaran',data:klr,backgroundColor:'rgba(226,75,74,0.8)',borderRadius:5,borderSkipped:false}
   ]},options:bo});
+  
   if(CL)CL.destroy();
   CL=new Chart(document.getElementById('cline').getContext('2d'),{type:'line',data:{labels:lbl,datasets:[{
     label:'Saldo',data:sld,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.08)',
@@ -1105,20 +1195,7 @@ function renderGrafik(data){
 
   var tM=fil.filter(function(r){return r.jenis==='masuk';}).reduce(function(a,b){return a+Number(b.nominal);},0);
   var tK=fil.filter(function(r){return r.jenis==='keluar';}).reduce(function(a,b){return a+Number(b.nominal);},0);
-  var sd=data.length?Number(data[data.length-1].saldo):0; 
   var net=tM-tK;
-
-  document.getElementById('s0').textContent=fRp(sd);
-  document.getElementById('s1').textContent=fRp(tM);
-  document.getElementById('s2').textContent=fRp(tK);
-  document.getElementById('s3').textContent=fil.length;
-
-  var subTexts = document.querySelectorAll('.sc .ss');
-  if(subTexts.length >= 4) {
-    subTexts[1].textContent = PN[PER];
-    subTexts[2].textContent = PN[PER];
-    subTexts[3].textContent = 'Periode terpilih';
-  }
 
   document.getElementById('gang').innerHTML=
     '<div class="sc"><div class="sl">Pemasukan</div><div class="sv G" style="font-size:17px">'+fRp(tM)+'</div></div>'
@@ -1129,14 +1206,127 @@ function renderGrafik(data){
 }
 
 // ================================================================
-//  MODAL HELPERS
+//  FITUR REKAP LAPORAN DATA (WITH BREAKDOWN ACCORDION)
+// ================================================================
+function renderRekapData(){
+  var tipe = document.getElementById('rekap-tipe').value;
+  var thnTarget = parseInt(document.getElementById('rekap-tahun').value);
+  var tb = document.getElementById('tbody-rekap');
+
+  var filtered = TRX.filter(function(r){
+    if(!r.tanggal) return false;
+    var d = new Date(r.tanggal);
+    return tipe === 'tahunan' || tipe === 'semua' ? true : d.getFullYear() === thnTarget;
+  });
+
+  var rekapMap = {};
+
+  filtered.forEach(function(r){
+    var d = new Date(r.tanggal);
+    var key = '';
+
+    if (tipe === 'mingguan') {
+      var firstDayOfYear = new Date(d.getFullYear(), 0, 1);
+      var pastDaysOfYear = (d - firstDayOfYear) / 86400000;
+      var weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+      key = 'Minggu ke-' + weekNum + ' (' + d.getFullYear() + ')';
+    } else if (tipe === 'bulanan') {
+      key = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    } else if (tipe === 'tahunan') {
+      key = 'Tahun ' + d.getFullYear();
+    } else {
+      key = 'Semua Transaksi';
+    }
+
+    if (!rekapMap[key]) rekapMap[key] = { m: 0, k: 0, items: [] };
+    if (r.jenis === 'masuk') rekapMap[key].m += Number(r.nominal);
+    else rekapMap[key].k += Number(r.nominal);
+    
+    rekapMap[key].items.push(r);
+  });
+
+  var keys = Object.keys(rekapMap);
+  if (!keys.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--TA)">Tidak ada data untuk periode ini.</td></tr>';
+    document.getElementById('rk-in').textContent = fRp(0);
+    document.getElementById('rk-out').textContent = fRp(0);
+    document.getElementById('rk-net').textContent = fRp(0);
+    return;
+  }
+
+  var totIn = 0, totOut = 0;
+  var html = '';
+
+  keys.forEach(function(k, index){
+    var m = rekapMap[k].m;
+    var kOut = rekapMap[k].k;
+    var net = m - kOut;
+    totIn += m;
+    totOut += kOut;
+    var rowId = 'detail-' + index;
+
+    // Outer / Summary Row
+    html += '<tr class="row-parent" onclick="toggleDetail(\'' + rowId + '\', this)">'
+      + '<td style="text-align:center;color:var(--TA)"><span class="icon-toggle">▶</span></td>'
+      + '<td style="font-weight:700">' + k + ' <span style="font-size:10px;font-weight:normal;color:var(--TA)">(' + rekapMap[k].items.length + ' transaksi)</span></td>'
+      + '<td class="nm">+ ' + fRp(m) + '</td>'
+      + '<td class="nk">- ' + fRp(kOut) + '</td>'
+      + '<td class="' + (net >= 0 ? 'sp' : 'sn') + '">' + (net >= 0 ? '+' : '') + fRp(net) + '</td>'
+      + '</tr>';
+
+    // Breakdown Items Table inside Expandable Row
+    var itemsHtml = rekapMap[k].items.map(function(item){
+      return '<tr>'
+        + '<td style="white-space:nowrap;color:var(--TA)">' + fTgl(item.tanggal) + '</td>'
+        + '<td><span class="bg ' + (item.jenis==='masuk'?'M':'K') + '">' + (item.jenis==='masuk'?'Masuk':'Keluar') + '</span></td>'
+        + '<td><b>' + x(item.nama) + '</b></td>'
+        + '<td style="color:var(--TA)">' + x(item.keterangan || '-') + '</td>'
+        + '<td>' + x(item.kategori || 'Lainnya') + '</td>'
+        + '<td class="' + (item.jenis==='masuk'?'nm':'nk') + '" style="text-align:right">' + (item.jenis==='masuk'?'+':'-') + ' ' + fRp(item.nominal) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    // Inner Breakdown Container Row
+    html += '<tr id="' + rowId + '" class="row-detail">'
+      + '<td colspan="5" style="padding:0 14px 14px 14px">'
+      + '<div class="box-detail">'
+      + '<div style="font-weight:700;font-size:11px;margin-bottom:6px;color:var(--HG)">Rincian / Breakdown Transaksi (' + k + '):</div>'
+      + '<table class="tbl-inner">'
+      + '<thead><tr>'
+      + '<th>TGL</th><th>JENIS</th><th>NAMA / SUMBER</th><th>KETERANGAN</th><th>KATEGORI</th><th style="text-align:right">NOMINAL</th>'
+      + '</tr></thead>'
+      + '<tbody>' + itemsHtml + '</tbody>'
+      + '</table>'
+      + '</div>'
+      + '</td>'
+      + '</tr>';
+  });
+
+  tb.innerHTML = html;
+  document.getElementById('rk-in').textContent = fRp(totIn);
+  document.getElementById('rk-out').textContent = fRp(totOut);
+  var netTot = totIn - totOut;
+  document.getElementById('rk-net').textContent = (netTot >= 0 ? '+' : '') + fRp(netTot);
+}
+
+function toggleDetail(id, el){
+  var detailRow = document.getElementById(id);
+  var icon = el.querySelector('.icon-toggle');
+  if(detailRow.classList.contains('open')){
+    detailRow.classList.remove('open');
+    if(icon) icon.textContent = '▶';
+  } else {
+    detailRow.classList.add('open');
+    if(icon) icon.textContent = '▼';
+  }
+}
+
+// ================================================================
+//  MODAL HELPERS & UTILS
 // ================================================================
 function om(id){document.getElementById(id).classList.add('show');}
 function cm(id){document.getElementById(id).classList.remove('show');}
 
-// ================================================================
-//  UTILS
-// ================================================================
 function sync(t,txt){
   var d=document.getElementById('sdot');
   d.className=t==='L'?'L':t==='E'?'E':'';
