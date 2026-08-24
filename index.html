@@ -234,11 +234,12 @@ footer a{color:var(--GR)}
   </div>
 </div>
 
-<!-- MODAL TAMBAH AGENDA KEGIATAN (FITUR BARU) -->
+<!-- MODAL TAMBAH / EDIT AGENDA KEGIATAN -->
 <div class="ov" id="m-agenda">
   <div class="mb" style="width:430px">
-    <h2>+ Tambah Kegiatan Warga</h2>
+    <h2 id="ag-title-modal">+ Tambah Kegiatan Warga</h2>
     <div class="sub">Informasi kegiatan perumahan 1 bulan ke depan.</div>
+    <input type="hidden" id="ag-edit-id" value="">
     <div class="fi">
       <label>Nama Kegiatan</label>
       <input type="text" id="ag-judul" placeholder="cth: Gotong Royong / Arisan RT">
@@ -350,7 +351,7 @@ footer a{color:var(--GR)}
 
   <!-- ADMIN BAR -->
   <div id="abar">
-    <div class="abh"><h3>Panel Bendahara</h3><p>Login sebagai admin. Hanya Anda yang dapat menambah data.</p></div>
+    <div class="abh"><h3>Panel Bendahara</h3><p>Login sebagai admin. Hanya Anda yang dapat menambah/mengedit data.</p></div>
     <div class="abb">
       <button class="btn bp" style="width:auto" onclick="bukaFormTrx()">+ Tambah Transaksi</button>
       <button class="btn bp" style="width:auto; background:var(--B);" onclick="bukaFormAgenda()">+ Tambah Agenda</button>
@@ -389,7 +390,7 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- TAB: AGENDA KEGIATAN (FITUR BARU) -->
+  <!-- TAB: AGENDA KEGIATAN -->
   <div id="tab-agenda" class="tw" style="display:none">
     <div class="th2">
       <h3>Agenda Kegiatan 1 Bulan Ke Depan</h3>
@@ -633,7 +634,7 @@ async function loadData(){
 }
 
 // ================================================================
-//  AGENDA KEGIATAN (FITUR BARU INTERAKTIF)
+//  AGENDA KEGIATAN (FITUR INTERAKTIF + EDIT)
 // ================================================================
 function loadAgendaLocal(){
   var data = localStorage.getItem('sr_agenda');
@@ -714,13 +715,18 @@ function renderAgenda(){
       + '<div class="agenda-meta">'
       + '<div class="agenda-meta-item">🗓️ <b>' + fTgl(a.tanggal) + '</b> (' + (a.waktu||'Selesai') + ' WIB)</div>'
       + '<div class="agenda-meta-item">📍 ' + x(a.lokasi||'Perumahan Sunrise River') + '</div>'
-      + (ADMIN ? '<div style="margin-top:8px"><button class="btn bd bsm" onclick="hapusAgenda(\''+a.id+'\')">Hapus Agenda</button></div>' : '')
+      + (ADMIN ? '<div style="margin-top:10px; display:flex; gap:6px;">'
+                 + '<button class="btn bw bsm" style="flex:1" onclick="editAgenda(\''+a.id+'\')">✏️ Edit</button>'
+                 + '<button class="btn bd bsm" style="flex:1" onclick="hapusAgenda(\''+a.id+'\')">🗑️ Hapus</button>'
+                 + '</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
 }
 
 function bukaFormAgenda(){
+  document.getElementById('ag-title-modal').textContent = '+ Tambah Kegiatan Warga';
+  document.getElementById('ag-edit-id').value = '';
   document.getElementById('ag-judul').value = '';
   document.getElementById('ag-tgl').value = new Date().toISOString().split('T')[0];
   document.getElementById('ag-waktu').value = '08:00';
@@ -730,7 +736,24 @@ function bukaFormAgenda(){
   setTimeout(function(){ document.getElementById('ag-judul').focus(); }, 150);
 }
 
+function editAgenda(id){
+  var item = AGENDA.find(function(a){ return a.id === id; });
+  if(!item) return;
+
+  document.getElementById('ag-title-modal').textContent = '✏️ Edit Kegiatan Warga';
+  document.getElementById('ag-edit-id').value = item.id;
+  document.getElementById('ag-judul').value = item.judul || '';
+  document.getElementById('ag-tgl').value = item.tanggal || '';
+  document.getElementById('ag-waktu').value = item.waktu || '';
+  document.getElementById('ag-lokasi').value = item.lokasi || '';
+  document.getElementById('ag-ket').value = item.ket || '';
+  
+  om('m-agenda');
+  setTimeout(function(){ document.getElementById('ag-judul').focus(); }, 150);
+}
+
 function simpanAgenda(){
+  var editId = document.getElementById('ag-edit-id').value;
   var judul = document.getElementById('ag-judul').value.trim();
   var tgl = document.getElementById('ag-tgl').value;
   var waktu = document.getElementById('ag-waktu').value;
@@ -742,21 +765,34 @@ function simpanAgenda(){
     return;
   }
 
-  var item = {
-    id: 'ag_' + Date.now(),
-    judul: judul,
-    tanggal: tgl,
-    waktu: waktu,
-    lokasi: lokasi,
-    ket: ket
-  };
+  if(editId){
+    // Update Mode
+    var index = AGENDA.findIndex(function(a){ return a.id === editId; });
+    if(index !== -1){
+      AGENDA[index].judul = judul;
+      AGENDA[index].tanggal = tgl;
+      AGENDA[index].waktu = waktu;
+      AGENDA[index].lokasi = lokasi;
+      AGENDA[index].ket = ket;
+      toast('Agenda kegiatan berhasil diperbarui!','ok');
+    }
+  } else {
+    // Create Mode
+    var item = {
+      id: 'ag_' + Date.now(),
+      judul: judul,
+      tanggal: tgl,
+      waktu: waktu,
+      lokasi: lokasi,
+      ket: ket
+    };
+    AGENDA.push(item);
+    toast('Agenda kegiatan berhasil ditambahkan!','ok');
+  }
 
-  AGENDA.push(item);
   localStorage.setItem('sr_agenda', JSON.stringify(AGENDA));
-  
   cm('m-agenda');
   renderAgenda();
-  toast('Agenda kegiatan berhasil ditambahkan!','ok');
 }
 
 function hapusAgenda(id){
