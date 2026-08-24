@@ -33,7 +33,7 @@ header{background:var(--HG);color:#fff;padding:0 20px;display:flex;align-items:c
 .mb h2{font-size:17px;font-weight:700;margin-bottom:5px}
 .mb .sub{font-size:13px;color:var(--TA);margin-bottom:18px}
 label{display:block;font-size:11px;font-weight:700;color:var(--TA);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-input[type=text],input[type=password],input[type=number],input[type=date],input[type=url],select,textarea{width:100%;padding:10px 13px;border:1.5px solid var(--BD);border-radius:var(--RS);font-family:inherit;font-size:13px;background:var(--GM);outline:none;transition:border .2s,background .2s;color:var(--T)}
+input[type=text],input[type=password],input[type=number],input[type=date],input[type=time],input[type=url],select,textarea{width:100%;padding:10px 13px;border:1.5px solid var(--BD);border-radius:var(--RS);font-family:inherit;font-size:13px;background:var(--GM);outline:none;transition:border .2s,background .2s;color:var(--T)}
 input:focus,select:focus,textarea:focus{border-color:var(--H);background:#fff}
 textarea{min-height:68px;resize:vertical}
 .fi{margin-bottom:13px}
@@ -113,6 +113,16 @@ td{padding:11px 14px;vertical-align:middle}
 .wL{color:var(--H);font-size:10px;font-weight:700}.wB{color:var(--R);font-size:10px;font-weight:700}
 .wT{color:#B91C1C;font-size:10px;font-weight:800}
 .wa2{cursor:pointer;border:2px dashed var(--BD);background:transparent;justify-content:center;color:var(--TA);font-size:12px;font-weight:700}
+
+/* AGENDA KEGIATAN STYLES */
+.agenda-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; padding: 14px; }
+.agenda-card { background: #fff; border: 1px solid var(--BD); border-radius: var(--RA); padding: 16px; position: relative; display: flex; flex-direction: column; justify-content: space-between; transition: transform .15s, box-shadow .15s; }
+.agenda-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.agenda-date-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; background: var(--HM); color: var(--HG); width: fit-content; }
+.agenda-title { font-size: 15px; font-weight: 700; color: var(--T); margin-bottom: 6px; line-height: 1.3; }
+.agenda-desc { font-size: 12px; color: var(--TA); margin-bottom: 12px; line-height: 1.5; white-space: pre-line; }
+.agenda-meta { font-size: 11px; color: var(--TA); border-top: 1px dashed var(--BD); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.agenda-meta-item { display: flex; align-items: center; gap: 6px; }
 
 /* AUTOCOMPLETE */
 .sw{position:relative}
@@ -224,6 +234,32 @@ footer a{color:var(--GR)}
   </div>
 </div>
 
+<!-- MODAL TAMBAH AGENDA KEGIATAN (FITUR BARU) -->
+<div class="ov" id="m-agenda">
+  <div class="mb" style="width:430px">
+    <h2>+ Tambah Kegiatan Warga</h2>
+    <div class="sub">Informasi kegiatan perumahan 1 bulan ke depan.</div>
+    <div class="fi">
+      <label>Nama Kegiatan</label>
+      <input type="text" id="ag-judul" placeholder="cth: Gotong Royong / Arisan RT">
+    </div>
+    <div class="row2">
+      <div class="fi"><label>Tanggal</label>
+        <input type="date" id="ag-tgl"></div>
+      <div class="fi"><label>Waktu / Jam</label>
+        <input type="time" id="ag-waktu"></div>
+    </div>
+    <div class="fi"><label>Lokasi Kegiatan</label>
+      <input type="text" id="ag-lokasi" placeholder="cth: Lapangan Perumahan / Fasum"></div>
+    <div class="fi"><label>Keterangan / Detail Kegiatan</label>
+      <textarea id="ag-ket" placeholder="cth: Mengimbau warga membawa alat kerja bakti masing-masing..."></textarea></div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-agenda')">Batal</button>
+      <button class="btn bp" onclick="simpanAgenda()">Simpan Kegiatan</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PEMBAYARAN DIGITAL -->
 <div class="ov" id="m-digital">
   <div class="mb" style="width:420px">
@@ -317,6 +353,7 @@ footer a{color:var(--GR)}
     <div class="abh"><h3>Panel Bendahara</h3><p>Login sebagai admin. Hanya Anda yang dapat menambah data.</p></div>
     <div class="abb">
       <button class="btn bp" style="width:auto" onclick="bukaFormTrx()">+ Tambah Transaksi</button>
+      <button class="btn bp" style="width:auto; background:var(--B);" onclick="bukaFormAgenda()">+ Tambah Agenda</button>
       <button class="btn bw" style="width:auto" onclick="kirimPengingatWargaBelumBayar()">📲 Pengingat WA Warga Belum Bayar</button>
       <button class="btn bs" style="width:auto" onclick="bukaSetup()">Konfigurasi</button>
       <button class="btn bd bsm" onclick="logout()">Keluar</button>
@@ -327,6 +364,7 @@ footer a{color:var(--GR)}
   <div class="nav-container">
     <div class="tabs">
       <button class="tb on" onclick="tab('trx',this)">Transaksi</button>
+      <button class="tb" onclick="tab('agenda',this)">Agenda Kegiatan</button>
       <button class="tb" onclick="tab('warga',this)">Warga</button>
       <button class="tb" onclick="tab('grafik',this)">Ringkasan</button>
     </div>
@@ -349,6 +387,18 @@ footer a{color:var(--GR)}
         <tbody id="tbody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- TAB: AGENDA KEGIATAN (FITUR BARU) -->
+  <div id="tab-agenda" class="tw" style="display:none">
+    <div class="th2">
+      <h3>Agenda Kegiatan 1 Bulan Ke Depan</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:var(--TA)">Sunrise River Cileungsi</span>
+        <button id="btn-add-agenda" class="btn bp bsm" style="display:none; width:auto;" onclick="bukaFormAgenda()">+ Tambah Agenda</button>
+      </div>
+    </div>
+    <div class="agenda-grid" id="agenda-list"></div>
   </div>
 
   <!-- TAB: WARGA -->
@@ -430,11 +480,12 @@ var CFG={
   get pw(){  return (ADMIN_PASS&&ADMIN_PASS!=='')?ADMIN_PASS:(localStorage.getItem('rt_p')||'sr2admin'); }
 };
 
-var ADMIN=false, TRX=[], WARGA=[], TIPE='M', SG_IDX=-1, SG_PAY_IDX=-1;
+var ADMIN=false, TRX=[], WARGA=[], AGENDA=[], TIPE='M', SG_IDX=-1, SG_PAY_IDX=-1;
 var CB=null, CL=null, PER='minggu';
 
 window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('f-tgl').value=new Date().toISOString().split('T')[0];
+  document.getElementById('ag-tgl').value=new Date().toISOString().split('T')[0];
 
   var clk=0,tmr;
   document.getElementById('logo').addEventListener('click',function(){
@@ -450,6 +501,7 @@ window.addEventListener('DOMContentLoaded',function(){
       document.getElementById('nsug-pay').style.display='none';
   });
 
+  loadAgendaLocal();
   loadData();
 });
 
@@ -470,7 +522,10 @@ function login(){
     document.getElementById('badm').classList.add('on');
     document.getElementById('th-aksi').style.display='';
     document.getElementById('btn-remind-warga').style.display='inline-block';
-    renderTrx(TRX); toast('Login berhasil!','ok');
+    document.getElementById('btn-add-agenda').style.display='inline-block';
+    renderTrx(TRX); 
+    renderAgenda();
+    toast('Login berhasil!','ok');
   } else document.getElementById('lerr').style.display='block';
 }
 function logout(){
@@ -480,7 +535,10 @@ function logout(){
   document.getElementById('badm').style.display='none';
   document.getElementById('th-aksi').style.display='none';
   document.getElementById('btn-remind-warga').style.display='none';
-  renderTrx(TRX); toast('Keluar dari mode admin');
+  document.getElementById('btn-add-agenda').style.display='none';
+  renderTrx(TRX); 
+  renderAgenda();
+  toast('Keluar dari mode admin');
 }
 
 // ================================================================
@@ -575,6 +633,141 @@ async function loadData(){
 }
 
 // ================================================================
+//  AGENDA KEGIATAN (FITUR BARU INTERAKTIF)
+// ================================================================
+function loadAgendaLocal(){
+  var data = localStorage.getItem('sr_agenda');
+  if(data){
+    try { AGENDA = JSON.parse(data); } catch(e){ AGENDA = []; }
+  } else {
+    // Sample default agenda 1 bulan ke depan
+    var today = new Date();
+    var nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
+    var nextMonth = new Date(today); nextMonth.setDate(today.getDate() + 20);
+
+    AGENDA = [
+      {
+        id: 'ag_1',
+        judul: 'Gotong Royong Kebersihan Lingkungan',
+        tanggal: nextWeek.toISOString().split('T')[0],
+        waktu: '07:30',
+        lokasi: 'Area Fasum & Jalan Utama',
+        ket: 'Pembersihan selokan dan perapihan tanaman liar. Diharapkan kehadiran warga.'
+      },
+      {
+        id: 'ag_2',
+        judul: 'Arisan Bulanan Warga Jalak Suren',
+        tanggal: nextMonth.toISOString().split('T')[0],
+        waktu: '19:30',
+        lokasi: 'Rumah Pak RT',
+        ket: 'Silaturahmi bulanan dan pembahasan kas perumahan.'
+      }
+    ];
+    localStorage.setItem('sr_agenda', JSON.stringify(AGENDA));
+  }
+  renderAgenda();
+}
+
+function renderAgenda(){
+  var box = document.getElementById('agenda-list');
+  if(!box) return;
+
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  
+  var oneMonthLater = new Date(now);
+  oneMonthLater.setDate(now.getDate() + 30);
+
+  // Filter kegiatan 1 bulan ke depan
+  var validAgenda = AGENDA.filter(function(a){
+    var d = new Date(a.tanggal);
+    return d >= now && d <= oneMonthLater;
+  }).sort(function(a,b){
+    return new Date(a.tanggal) - new Date(b.tanggal);
+  });
+
+  if(!validAgenda.length){
+    box.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:36px;color:var(--TA)">'
+      + '<div style="font-size:32px;margin-bottom:8px">📅</div>'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:4px">Belum Ada Agenda Kegiatan</div>'
+      + '<div style="font-size:12px">Belum ada jadwal kegiatan warga dalam 30 hari ke depan.</div>'
+      + '</div>';
+    return;
+  }
+
+  box.innerHTML = validAgenda.map(function(a){
+    var d = new Date(a.tanggal);
+    var diffDays = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+    
+    var badgeText = '';
+    if(diffDays === 0) badgeText = 'Hari Ini';
+    else if(diffDays === 1) badgeText = 'Besok';
+    else if(diffDays <= 7) badgeText = 'Minggu Ini';
+    else badgeText = 'Mendatang (' + diffDays + ' hari)';
+
+    return '<div class="agenda-card">'
+      + '<div>'
+      + '<div class="agenda-date-badge">' + badgeText + '</div>'
+      + '<div class="agenda-title">' + x(a.judul) + '</div>'
+      + '<div class="agenda-desc">' + x(a.ket) + '</div>'
+      + '</div>'
+      + '<div class="agenda-meta">'
+      + '<div class="agenda-meta-item">🗓️ <b>' + fTgl(a.tanggal) + '</b> (' + (a.waktu||'Selesai') + ' WIB)</div>'
+      + '<div class="agenda-meta-item">📍 ' + x(a.lokasi||'Perumahan Sunrise River') + '</div>'
+      + (ADMIN ? '<div style="margin-top:8px"><button class="btn bd bsm" onclick="hapusAgenda(\''+a.id+'\')">Hapus Agenda</button></div>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function bukaFormAgenda(){
+  document.getElementById('ag-judul').value = '';
+  document.getElementById('ag-tgl').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ag-waktu').value = '08:00';
+  document.getElementById('ag-lokasi').value = '';
+  document.getElementById('ag-ket').value = '';
+  om('m-agenda');
+  setTimeout(function(){ document.getElementById('ag-judul').focus(); }, 150);
+}
+
+function simpanAgenda(){
+  var judul = document.getElementById('ag-judul').value.trim();
+  var tgl = document.getElementById('ag-tgl').value;
+  var waktu = document.getElementById('ag-waktu').value;
+  var lokasi = document.getElementById('ag-lokasi').value.trim();
+  var ket = document.getElementById('ag-ket').value.trim();
+
+  if(!judul || !tgl){
+    toast('Judul dan Tanggal kegiatan wajib diisi!','err');
+    return;
+  }
+
+  var item = {
+    id: 'ag_' + Date.now(),
+    judul: judul,
+    tanggal: tgl,
+    waktu: waktu,
+    lokasi: lokasi,
+    ket: ket
+  };
+
+  AGENDA.push(item);
+  localStorage.setItem('sr_agenda', JSON.stringify(AGENDA));
+  
+  cm('m-agenda');
+  renderAgenda();
+  toast('Agenda kegiatan berhasil ditambahkan!','ok');
+}
+
+function hapusAgenda(id){
+  if(!confirm('Hapus kegiatan ini dari jadwal?')) return;
+  AGENDA = AGENDA.filter(function(a){ return a.id !== id; });
+  localStorage.setItem('sr_agenda', JSON.stringify(AGENDA));
+  renderAgenda();
+  toast('Agenda berhasil dihapus','ok');
+}
+
+// ================================================================
 //  RENDER TRANSAKSI
 // ================================================================
 function renderTrx(data){
@@ -655,13 +848,11 @@ function renderWarga(){
   var currentYear = now.getFullYear().toString();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
-  // Batas awal pembayaran iuran dimulai dari bulan Agustus (Index 7)
   var START_MONTH_INDEX = 7; 
 
   var html = WARGA.map(function(w){
     var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
-    // Hitung berapa bulan yang belum dibayar dari AGUSTUS s/d Bulan Ini
     var tunggakanCount = 0;
     if (currentMonthIndex >= START_MONTH_INDEX) {
       for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
@@ -702,7 +893,6 @@ function renderWarga(){
   document.getElementById('wg').innerHTML = html;
 }
 
-// FITUR PENGINGAT WA OTOMATIS (DIHITUNG MULAI AGUSTUS)
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
@@ -710,7 +900,7 @@ function kirimPengingatWargaBelumBayar(){
   var currentYear = now.getFullYear().toString();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
   
-  var START_MONTH_INDEX = 7; // Mulai Agustus
+  var START_MONTH_INDEX = 7; 
 
   if (tanggal <= 10) {
     alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
@@ -1030,10 +1220,11 @@ async function hapus(i,id){
 function tab(t,btn){
   document.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
-  ['trx','warga','grafik'].forEach(function(id){
+  ['trx','agenda','warga','grafik'].forEach(function(id){
     document.getElementById('tab-'+id).style.display=id===t?'block':'none';
   });
   if(t==='warga') renderWarga();
+  if(t==='agenda') renderAgenda();
   if(t==='grafik') renderGrafik(TRX);
   if(t==='trx') renderStats(TRX);
 }
