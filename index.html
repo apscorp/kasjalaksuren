@@ -524,56 +524,6 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 
 // ================================================================
-//  HELPERS REKONSILIASI IURAN
-// ================================================================
-function normalizeName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function parseIuranInfo(r) {
-  if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return null;
-  var ket = (r.keterangan || '').toLowerCase();
-  
-  var monthsMap = {
-    'januari': 0, 'jan': 0,
-    'februari': 1, 'feb': 1,
-    'maret': 2, 'mar': 2,
-    'april': 3, 'apr': 3,
-    'mei': 4,
-    'juni': 5, 'jun': 5,
-    'juli': 6, 'jul': 6,
-    'agustus': 7, 'ags': 7, 'agu': 7, 'agust': 7,
-    'september': 8, 'sep': 8, 'sept': 8,
-    'oktober': 9, 'okt': 9,
-    'november': 10, 'nov': 10,
-    'desember': 11, 'des': 11
-  };
-
-  var foundMonth = -1;
-  for (var key in monthsMap) {
-    var reg = new RegExp('\\b' + key + '\\b', 'i');
-    if (reg.test(ket)) {
-      foundMonth = monthsMap[key];
-      break;
-    }
-  }
-
-  var year = null;
-  var matchYear = ket.match(/\b(20\d{2})\b/);
-  if (matchYear) {
-    year = parseInt(matchYear[1]);
-  } else if (r.tanggal) {
-    var d = new Date(r.tanggal);
-    if (!isNaN(d.getTime())) year = d.getFullYear();
-  }
-
-  if (foundMonth !== -1 && year !== null) {
-    return { month: foundMonth, year: year, value: year * 12 + foundMonth };
-  }
-  return null;
-}
-
-// ================================================================
 //  AUTH
 // ================================================================
 function showLogin(){
@@ -796,37 +746,24 @@ function renderKat(data){
 function renderWarga(){
   var now = new Date();
   var currentMonthIndex = now.getMonth(); 
-  var currentYear = now.getFullYear();
-  var START_MONTH_INDEX = 7; // Agustus (Month 7)
+  var currentYear = now.getFullYear().toString();
+  var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
+  var START_MONTH_INDEX = 7; 
 
   var html = WARGA.map(function(w){
     var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
-    var normWarga = normalizeName(w.nama);
-
-    var paidMonthsSet = new Set();
-    TRX.forEach(function(r){
-      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return;
-      var normTrx = normalizeName(r.nama);
-      if (normTrx.includes(normWarga) || normWarga.includes(normTrx)) {
-        var info = parseIuranInfo(r);
-        if (info) paidMonthsSet.add(info.value);
-      }
-    });
-
+    
     var tunggakanCount = 0;
-    if (currentYear > 2026) {
-      for (var yr = 2026; yr <= currentYear; yr++) {
-        var startM = (yr === 2026) ? START_MONTH_INDEX : 0;
-        var endM = (yr === currentYear) ? currentMonthIndex : 11;
-        for (var m = startM; m <= endM; m++) {
-          var val = yr * 12 + m;
-          if (!paidMonthsSet.has(val)) tunggakanCount++;
-        }
-      }
-    } else if (currentYear === 2026 && currentMonthIndex >= START_MONTH_INDEX) {
-      for (var m = START_MONTH_INDEX; m <= currentMonthIndex; m++) {
-        var val = 2026 * 12 + m;
-        if (!paidMonthsSet.has(val)) tunggakanCount++;
+    if (currentMonthIndex >= START_MONTH_INDEX) {
+      for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
+        var mName = monthNames[i];
+        var isPaid = TRX.some(function(r){
+          if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+          if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+          var ket = (r.keterangan || '').toLowerCase();
+          return ket.includes(mName) && ket.includes(currentYear);
+        });
+        if(!isPaid) tunggakanCount++;
       }
     }
 
@@ -860,7 +797,8 @@ function kirimPengingatWargaBelumBayar(){
   var now = new Date();
   var tanggal = now.getDate();
   var currentMonthIndex = now.getMonth();
-  var currentYear = now.getFullYear();
+  var currentYear = now.getFullYear().toString();
+  var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
   var START_MONTH_INDEX = 7;
 
   if (tanggal <= 10) {
@@ -872,35 +810,19 @@ function kirimPengingatWargaBelumBayar(){
   var daftarBelumBayar = [];
 
   WARGA.forEach(function(w){
-    var normWarga = normalizeName(w.nama);
-    var paidMonthsSet = new Set();
-
-    TRX.forEach(function(r){
-      if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return;
-      var normTrx = normalizeName(r.nama);
-      if (normTrx.includes(normWarga) || normWarga.includes(normTrx)) {
-        var info = parseIuranInfo(r);
-        if (info) paidMonthsSet.add(info.value);
-      }
-    });
-
     var tunggakanCount = 0;
-    if (currentYear > 2026) {
-      for (var yr = 2026; yr <= currentYear; yr++) {
-        var startM = (yr === 2026) ? START_MONTH_INDEX : 0;
-        var endM = (yr === currentYear) ? currentMonthIndex : 11;
-        for (var m = startM; m <= endM; m++) {
-          var val = yr * 12 + m;
-          if (!paidMonthsSet.has(val)) tunggakanCount++;
-        }
-      }
-    } else if (currentYear === 2026 && currentMonthIndex >= START_MONTH_INDEX) {
-      for (var m = START_MONTH_INDEX; m <= currentMonthIndex; m++) {
-        var val = 2026 * 12 + m;
-        if (!paidMonthsSet.has(val)) tunggakanCount++;
+    if (currentMonthIndex >= START_MONTH_INDEX) {
+      for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
+        var mName = monthNames[i];
+        var isPaid = TRX.some(function(r){
+          if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
+          if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
+          var ket = (r.keterangan || '').toLowerCase();
+          return ket.includes(mName) && ket.includes(currentYear);
+        });
+        if(!isPaid) tunggakanCount++;
       }
     }
-
     if(tunggakanCount > 0){
       daftarBelumBayar.push({ nama: w.nama, count: tunggakanCount });
     }
@@ -1099,34 +1021,36 @@ async function simpanTrx(){
   if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
     var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
     var baseDate = new Date(tgl);
-    var normInputNama = normalizeName(nm);
+    var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
-    // Cari bulan terakhir yang sudah dibayar oleh warga ini
-    var paidMonthsVals = [];
+    // DETEKSI TERAKHIR BULAN TERBAYAR UNTUK WARGA INI
+    var startMonthIndex = baseDate.getMonth();
+    var startYear = baseDate.getFullYear();
+
+    var existingMonthsPaid = [];
     TRX.forEach(function(r){
-      if (r.jenis === 'masuk' && r.kategori === 'Iuran') {
-        var normTrx = normalizeName(r.nama);
-        if (normTrx.includes(normInputNama) || normInputNama.includes(normTrx)) {
-          var info = parseIuranInfo(r);
-          if (info) paidMonthsVals.push(info.value);
-        }
+      if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
+        var rKet = (r.keterangan || '').toLowerCase();
+        monthNames.forEach(function(mName, idx){
+          if (rKet.includes(mName)) {
+            var matchYear = rKet.match(/\b(20\d{2})\b/);
+            var yr = matchYear ? parseInt(matchYear[1]) : startYear;
+            existingMonthsPaid.push(yr * 12 + idx);
+          }
+        });
       }
     });
 
-    var startYear = baseDate.getFullYear();
-    var startMonthIndex = baseDate.getMonth();
+    if (existingMonthsPaid.length > 0) {
+      existingMonthsPaid.sort(function(a,b){ return a - b; });
+      var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
+      var inputMonthVal = startYear * 12 + startMonthIndex;
 
-    if (paidMonthsVals.length > 0) {
-      paidMonthsVals.sort(function(a,b){ return a - b; });
-      var maxVal = paidMonthsVals[paidMonthsVals.length - 1];
-      var inputVal = startYear * 12 + startMonthIndex;
-
-      // Jika input tanggal bayar berada pada atau sebelum bulan terbayar terakhir,
-      // alokasikan transaksi otomatis ke bulan berikutnya setelah maxVal
-      if (inputVal <= maxVal) {
-        var nextVal = maxVal + 1;
-        startYear = Math.floor(nextVal / 12);
-        startMonthIndex = nextVal % 12;
+      // Jika tanggal bayar berada pada atau sebelum bulan terbayar terakhir, majukan ke bulan berikutnya
+      if (inputMonthVal <= lastPaidMonthVal) {
+        var nextMonthVal = lastPaidMonthVal + 1;
+        startYear = Math.floor(nextMonthVal / 12);
+        startMonthIndex = nextMonthVal % 12;
       }
     }
 
