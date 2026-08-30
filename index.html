@@ -424,7 +424,7 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- TAB: REKAP LAPORAN DATA (DENGAN BREAKDOWN DETAIL) -->
+  <!-- TAB: REKAP LAPORAN DATA -->
   <div id="tab-rekap" style="display:none">
     <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -451,7 +451,7 @@ footer a{color:var(--GR)}
       <div class="sc"><div class="sl">Selisih (Net Rekap)</div><div class="sv B" id="rk-net">Rp 0</div></div>
     </div>
 
-    <!-- TABLE REKAP WITH EXPANDABLE BREAKDOWN -->
+    <!-- TABLE REKAP -->
     <div class="tw">
       <div style="overflow-x:auto">
         <table>
@@ -1021,9 +1021,41 @@ async function simpanTrx(){
   if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
     var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
     var baseDate = new Date(tgl);
+    var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
+
+    // DETEKSI TERAKHIR BULAN TERBAYAR UNTUK WARGA INI
+    var startMonthIndex = baseDate.getMonth();
+    var startYear = baseDate.getFullYear();
+
+    var existingMonthsPaid = [];
+    TRX.forEach(function(r){
+      if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
+        var rKet = (r.keterangan || '').toLowerCase();
+        monthNames.forEach(function(mName, idx){
+          if (rKet.includes(mName)) {
+            var matchYear = rKet.match(/\b(20\d{2})\b/);
+            var yr = matchYear ? parseInt(matchYear[1]) : startYear;
+            existingMonthsPaid.push(yr * 12 + idx);
+          }
+        });
+      }
+    });
+
+    if (existingMonthsPaid.length > 0) {
+      existingMonthsPaid.sort(function(a,b){ return a - b; });
+      var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
+      var inputMonthVal = startYear * 12 + startMonthIndex;
+
+      // Jika tanggal bayar berada pada atau sebelum bulan terbayar terakhir, majukan ke bulan berikutnya
+      if (inputMonthVal <= lastPaidMonthVal) {
+        var nextMonthVal = lastPaidMonthVal + 1;
+        startYear = Math.floor(nextMonthVal / 12);
+        startMonthIndex = nextMonthVal % 12;
+      }
+    }
 
     for (var i = 0; i < monthsToPay; i++) {
-      var d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
+      var d = new Date(startYear, startMonthIndex + i, 1);
       var monthName = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
       var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran bulan ' + monthName);
 
@@ -1206,7 +1238,7 @@ function renderGrafik(data){
 }
 
 // ================================================================
-//  FITUR REKAP LAPORAN DATA (WITH BREAKDOWN ACCORDION)
+//  FITUR REKAP LAPORAN DATA
 // ================================================================
 function renderRekapData(){
   var tipe = document.getElementById('rekap-tipe').value;
@@ -1265,7 +1297,6 @@ function renderRekapData(){
     totOut += kOut;
     var rowId = 'detail-' + index;
 
-    // Outer / Summary Row
     html += '<tr class="row-parent" onclick="toggleDetail(\'' + rowId + '\', this)">'
       + '<td style="text-align:center;color:var(--TA)"><span class="icon-toggle">▶</span></td>'
       + '<td style="font-weight:700">' + k + ' <span style="font-size:10px;font-weight:normal;color:var(--TA)">(' + rekapMap[k].items.length + ' transaksi)</span></td>'
@@ -1274,7 +1305,6 @@ function renderRekapData(){
       + '<td class="' + (net >= 0 ? 'sp' : 'sn') + '">' + (net >= 0 ? '+' : '') + fRp(net) + '</td>'
       + '</tr>';
 
-    // Breakdown Items Table inside Expandable Row
     var itemsHtml = rekapMap[k].items.map(function(item){
       return '<tr>'
         + '<td style="white-space:nowrap;color:var(--TA)">' + fTgl(item.tanggal) + '</td>'
@@ -1286,7 +1316,6 @@ function renderRekapData(){
         + '</tr>';
     }).join('');
 
-    // Inner Breakdown Container Row
     html += '<tr id="' + rowId + '" class="row-detail">'
       + '<td colspan="5" style="padding:0 14px 14px 14px">'
       + '<div class="box-detail">'
