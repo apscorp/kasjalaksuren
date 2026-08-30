@@ -814,18 +814,18 @@ function renderWarga(){
     });
 
     var tunggakanCount = 0;
-    if (currentYear > 2025) {
-      for (var yr = 2025; yr <= currentYear; yr++) {
-        var startM = (yr === 2025) ? START_MONTH_INDEX : 0;
+    if (currentYear > 2026) {
+      for (var yr = 2026; yr <= currentYear; yr++) {
+        var startM = (yr === 2026) ? START_MONTH_INDEX : 0;
         var endM = (yr === currentYear) ? currentMonthIndex : 11;
         for (var m = startM; m <= endM; m++) {
           var val = yr * 12 + m;
           if (!paidMonthsSet.has(val)) tunggakanCount++;
         }
       }
-    } else if (currentYear === 2025 && currentMonthIndex >= START_MONTH_INDEX) {
+    } else if (currentYear === 2026 && currentMonthIndex >= START_MONTH_INDEX) {
       for (var m = START_MONTH_INDEX; m <= currentMonthIndex; m++) {
-        var val = 2025 * 12 + m;
+        var val = 2026 * 12 + m;
         if (!paidMonthsSet.has(val)) tunggakanCount++;
       }
     }
@@ -885,18 +885,18 @@ function kirimPengingatWargaBelumBayar(){
     });
 
     var tunggakanCount = 0;
-    if (currentYear > 2025) {
-      for (var yr = 2025; yr <= currentYear; yr++) {
-        var startM = (yr === 2025) ? START_MONTH_INDEX : 0;
+    if (currentYear > 2026) {
+      for (var yr = 2026; yr <= currentYear; yr++) {
+        var startM = (yr === 2026) ? START_MONTH_INDEX : 0;
         var endM = (yr === currentYear) ? currentMonthIndex : 11;
         for (var m = startM; m <= endM; m++) {
           var val = yr * 12 + m;
           if (!paidMonthsSet.has(val)) tunggakanCount++;
         }
       }
-    } else if (currentYear === 2025 && currentMonthIndex >= START_MONTH_INDEX) {
+    } else if (currentYear === 2026 && currentMonthIndex >= START_MONTH_INDEX) {
       for (var m = START_MONTH_INDEX; m <= currentMonthIndex; m++) {
-        var val = 2025 * 12 + m;
+        var val = 2026 * 12 + m;
         if (!paidMonthsSet.has(val)) tunggakanCount++;
       }
     }
