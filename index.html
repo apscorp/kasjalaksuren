@@ -1023,7 +1023,8 @@ async function simpanTrx(){
     var baseDate = new Date(tgl);
     var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
-    // DETEKSI TERAKHIR BULAN TERBAYAR UNTUK WARGA INI
+    // Default bulan awal pembayaran iuran RT adalah Agustus (Indeks 7)
+    var START_DEFAULT_MONTH_INDEX = 7; 
     var startMonthIndex = baseDate.getMonth();
     var startYear = baseDate.getFullYear();
 
@@ -1042,15 +1043,22 @@ async function simpanTrx(){
     });
 
     if (existingMonthsPaid.length > 0) {
+      // Jika sudah pernah bayar sebelumnya, lanjutkan setelah bulan terakhir dibayar
       existingMonthsPaid.sort(function(a,b){ return a - b; });
       var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
+      var nextMonthVal = lastPaidMonthVal + 1;
+      startYear = Math.floor(nextMonthVal / 12);
+      startMonthIndex = nextMonthVal % 12;
+    } else {
+      // Jika BELUM pernah bayar sama sekali (Warga Baru / Belum Ada Data Iuran):
+      // Mulai pencatatan dari bulan Agustus (atau bulan awal mana yang lebih dulu)
+      var defaultMonthVal = startYear * 12 + START_DEFAULT_MONTH_INDEX;
       var inputMonthVal = startYear * 12 + startMonthIndex;
 
-      // Jika tanggal bayar berada pada atau sebelum bulan terbayar terakhir, majukan ke bulan berikutnya
-      if (inputMonthVal <= lastPaidMonthVal) {
-        var nextMonthVal = lastPaidMonthVal + 1;
-        startYear = Math.floor(nextMonthVal / 12);
-        startMonthIndex = nextMonthVal % 12;
+      // Jika input dilakukan di bulan setelah Agustus (misal September/Oktober),
+      // alokasikan iuran mulai dari Agustus terlebih dahulu
+      if (inputMonthVal > defaultMonthVal) {
+        startMonthIndex = START_DEFAULT_MONTH_INDEX;
       }
     }
 
