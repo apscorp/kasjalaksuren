@@ -377,7 +377,7 @@ footer a{color:var(--GR)}
     <div class="th2">
       <h3>Daftar Warga Jalak Suren</h3>
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:11px;color:var(--TA)">Iuran: Rp 30.000 / bulan (Mulai Ags)</span>
+        <span style="font-size:11px;color:var(--TA)">Iuran: Rp 30.000 / bulan</span>
         <button id="btn-remind-warga" class="btn bw bsm" style="display:none" onclick="kirimPengingatWargaBelumBayar()">📲 Pengingat WA Otomatis</button>
       </div>
     </div>
@@ -484,7 +484,7 @@ footer a{color:var(--GR)}
 // ================================================================
 //  KONFIGURASI
 // ================================================================
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqK7DveMlL3nlitoOXTMQpz1vJ41Z8FmNIXhWo5NtL2We3Wqcje8VoFnGN9NszGvG1/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyl9DGmvwKNJlbMo4lHtScdthjBAn5h-RWoAlWoCQ_9-tVAob-Eact0yc8l_XswR-15/exec';
 var ADMIN_PASS = '123890';
 
 (function(){
@@ -741,29 +741,43 @@ function renderKat(data){
 }
 
 // ================================================================
-//  WARGA & DETEKSI TUNGGAKAN
+//  WARGA & DETEKSI TUNGGAKAN BERDASARKAN MULAI IURAN WARGA
 // ================================================================
 function renderWarga(){
   var now = new Date();
   var currentMonthIndex = now.getMonth(); 
-  var currentYear = now.getFullYear().toString();
+  var currentYear = now.getFullYear();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
-  var START_MONTH_INDEX = 7; 
 
   var html = WARGA.map(function(w){
     var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
+    var startYear = 2025;
+    var startMonthIndex = 7; // Default Agustus 2025
+    if (w.mulaiIuran && w.mulaiIuran.includes('-')) {
+      var parts = w.mulaiIuran.split('-');
+      startYear = parseInt(parts[0]);
+      startMonthIndex = parseInt(parts[1]) - 1;
+    }
+
     var tunggakanCount = 0;
-    if (currentMonthIndex >= START_MONTH_INDEX) {
-      for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
-        var mName = monthNames[i];
+    var totalMonths = (currentYear - startYear) * 12 + (currentMonthIndex - startMonthIndex);
+
+    if (totalMonths >= 0) {
+      for (var m = 0; m <= totalMonths; m++) {
+        var checkVal = (startYear * 12) + startMonthIndex + m;
+        var yr = Math.floor(checkVal / 12);
+        var mIdx = checkVal % 12;
+        var mName = monthNames[mIdx];
+
         var isPaid = TRX.some(function(r){
           if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
           if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
           var ket = (r.keterangan || '').toLowerCase();
-          return ket.includes(mName) && ket.includes(currentYear);
+          return ket.includes(mName) && ket.includes(yr.toString());
         });
-        if(!isPaid) tunggakanCount++;
+
+        if (!isPaid) tunggakanCount++;
       }
     }
 
@@ -776,10 +790,12 @@ function renderWarga(){
       statusHtml = '<div class="wB">&#10007; Belum bayar</div>';
     }
 
+    var subInfo = '<div style="font-size:9px;color:var(--TA)">Mulai: ' + monthNames[startMonthIndex] + ' ' + startYear + '</div>';
+
     return '<div class="wc">'
       +'<div class="wa" style="background:'+wClr(w.nama)+'">'+ini+'</div>'
       +'<div><div class="wn">'+x(w.nama)+'</div>'
-      + statusHtml + '</div>'
+      + statusHtml + subInfo + '</div>'
       +(ADMIN?'<button onclick="hapusWarga(this,&quot;'+w.nama.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'&quot;)" title="Hapus" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--TA);font-size:16px;padding:2px 6px">&times;</button>':'')
       +'</div>';
   }).join('');
@@ -795,34 +811,43 @@ function renderWarga(){
 
 function kirimPengingatWargaBelumBayar(){
   var now = new Date();
-  var tanggal = now.getDate();
   var currentMonthIndex = now.getMonth();
-  var currentYear = now.getFullYear().toString();
+  var currentYear = now.getFullYear();
   var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
-  var START_MONTH_INDEX = 7;
-
-  if (tanggal <= 10) {
-    alert("Pengingat otomatis baru dapat dikirimkan jika sudah melewati tanggal 10 setiap bulannya.\nHari ini tanggal: " + tanggal);
-    return;
-  }
 
   var bulanNamaHeader = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   var daftarBelumBayar = [];
 
   WARGA.forEach(function(w){
+    var startYear = 2025;
+    var startMonthIndex = 7;
+    if (w.mulaiIuran && w.mulaiIuran.includes('-')) {
+      var parts = w.mulaiIuran.split('-');
+      startYear = parseInt(parts[0]);
+      startMonthIndex = parseInt(parts[1]) - 1;
+    }
+
     var tunggakanCount = 0;
-    if (currentMonthIndex >= START_MONTH_INDEX) {
-      for(var i = START_MONTH_INDEX; i <= currentMonthIndex; i++){
-        var mName = monthNames[i];
+    var totalMonths = (currentYear - startYear) * 12 + (currentMonthIndex - startMonthIndex);
+
+    if (totalMonths >= 0) {
+      for (var m = 0; m <= totalMonths; m++) {
+        var checkVal = (startYear * 12) + startMonthIndex + m;
+        var yr = Math.floor(checkVal / 12);
+        var mIdx = checkVal % 12;
+        var mName = monthNames[mIdx];
+
         var isPaid = TRX.some(function(r){
           if (r.jenis !== 'masuk' || r.kategori !== 'Iuran') return false;
           if (!r.nama.toLowerCase().includes(w.nama.toLowerCase())) return false;
           var ket = (r.keterangan || '').toLowerCase();
-          return ket.includes(mName) && ket.includes(currentYear);
+          return ket.includes(mName) && ket.includes(yr.toString());
         });
-        if(!isPaid) tunggakanCount++;
+
+        if (!isPaid) tunggakanCount++;
       }
     }
+
     if(tunggakanCount > 0){
       daftarBelumBayar.push({ nama: w.nama, count: tunggakanCount });
     }
@@ -862,12 +887,16 @@ async function addWarga(){
   if(!CFG.url){toast('Konfigurasi belum diisi!','err');return;}
   var n=prompt('Nama lengkap warga:'); if(!n||!n.trim()) return;
   n=n.trim();
+  
+  var startStr = prompt('Mulai wajib iuran (Format YYYY-MM, contoh: 2025-09 atau 2025-10):\nKosongkan jika default (2025-08):', '2025-08');
+  if(!startStr || !startStr.trim()) startStr = '2025-08';
+
   try{
-    var p=new URLSearchParams({action:'addWarga',nama:n});
+    var p=new URLSearchParams({action:'addWarga', nama:n, mulaiIuran:startStr.trim()});
     var res=await fetch(CFG.url+'?'+p.toString());
     var json=JSON.parse(await res.text());
     if(json.status==='ok'){
-      WARGA.push({nama:n}); renderWarga();
+      WARGA.push({nama:n, mulaiIuran:startStr.trim()}); renderWarga();
       toast('Warga ditambahkan!','ok');
     } else toast(json.message||'Gagal menambah warga','err');
   }catch(e){toast('Gagal: '+e.message,'err');}
@@ -1020,13 +1049,17 @@ async function simpanTrx(){
 
   if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
     var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
-    var baseDate = new Date(tgl);
     var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
-    // Default bulan awal pembayaran iuran RT adalah Agustus (Indeks 7)
-    var START_DEFAULT_MONTH_INDEX = 7; 
-    var startMonthIndex = baseDate.getMonth();
-    var startYear = baseDate.getFullYear();
+    var targetWarga = WARGA.find(function(w){ return w.nama.toLowerCase() === nm.toLowerCase(); });
+    var startYear = 2025;
+    var startMonthIndex = 7; 
+
+    if (targetWarga && targetWarga.mulaiIuran && targetWarga.mulaiIuran.includes('-')) {
+      var parts = targetWarga.mulaiIuran.split('-');
+      startYear = parseInt(parts[0]);
+      startMonthIndex = parseInt(parts[1]) - 1;
+    }
 
     var existingMonthsPaid = [];
     TRX.forEach(function(r){
@@ -1043,23 +1076,11 @@ async function simpanTrx(){
     });
 
     if (existingMonthsPaid.length > 0) {
-      // Jika sudah pernah bayar sebelumnya, lanjutkan setelah bulan terakhir dibayar
       existingMonthsPaid.sort(function(a,b){ return a - b; });
       var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
       var nextMonthVal = lastPaidMonthVal + 1;
       startYear = Math.floor(nextMonthVal / 12);
       startMonthIndex = nextMonthVal % 12;
-    } else {
-      // Jika BELUM pernah bayar sama sekali (Warga Baru / Belum Ada Data Iuran):
-      // Mulai pencatatan dari bulan Agustus (atau bulan awal mana yang lebih dulu)
-      var defaultMonthVal = startYear * 12 + START_DEFAULT_MONTH_INDEX;
-      var inputMonthVal = startYear * 12 + startMonthIndex;
-
-      // Jika input dilakukan di bulan setelah Agustus (misal September/Oktober),
-      // alokasikan iuran mulai dari Agustus terlebih dahulu
-      if (inputMonthVal > defaultMonthVal) {
-        startMonthIndex = START_DEFAULT_MONTH_INDEX;
-      }
     }
 
     for (var i = 0; i < monthsToPay; i++) {
