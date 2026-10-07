@@ -759,8 +759,8 @@ function renderWarga(){
   var html = WARGA.map(function(w){
     var ini = w.nama.split(' ').slice(0,2).map(function(c){return c[0]||'';}).join('').toUpperCase();
     
-    var startYear = 2025;
-    var startMonthIndex = 7; // Default Agustus 2025
+    var startYear = 2026;
+    var startMonthIndex = 7; // Default agustus 2026
     if (w.mulaiIuran && w.mulaiIuran.includes('-')) {
       var parts = w.mulaiIuran.split('-');
       startYear = parseInt(parts[0]);
@@ -836,7 +836,7 @@ function kirimPengingatWargaBelumBayar(){
   var daftarBelumBayar = [];
 
   WARGA.forEach(function(w){
-    var startYear = 2025;
+    var startYear = 2026;
     var startMonthIndex = 7;
     if (w.mulaiIuran && w.mulaiIuran.includes('-')) {
       var parts = w.mulaiIuran.split('-');
@@ -905,8 +905,8 @@ async function addWarga(){
   var n=prompt('Nama lengkap warga:'); if(!n||!n.trim()) return;
   n=n.trim();
   
-  var startStr = prompt('Mulai wajib iuran (Format YYYY-MM, contoh: 2026-08, 2026-09, 2026-10):\nKosongkan jika default (2025-08):', '2026-08');
-  if(!startStr || !startStr.trim()) startStr = '2025-08';
+  var startStr = prompt('Mulai wajib iuran (Format YYYY-MM, contoh: 2026-08, 2026-09, 2026-10):\nKosongkan jika default (2026-08):', '2026-08');
+  if(!startStr || !startStr.trim()) startStr = '2026-08';
 
   try{
     var p=new URLSearchParams({action:'addWarga', nama:n, mulaiIuran:startStr.trim()});
@@ -921,7 +921,7 @@ async function addWarga(){
 
 async function editWarga(nama, curVal){
   if(!CFG.url){toast('Konfigurasi belum diisi!','err');return;}
-  var newStartStr = prompt('Edit Bulan & Tahun Masuk untuk "' + nama + '"\nFormat YYYY-MM (contoh: 2026-08, 2026-09, 2026-10):', curVal || '2025-08');
+  var newStartStr = prompt('Edit Bulan & Tahun Masuk untuk "' + nama + '"\nFormat YYYY-MM (contoh: 2026-08, 2026-09, 2026-10):', curVal || '2026-08');
   if(!newStartStr || !newStartStr.trim()) return;
   
   newStartStr = newStartStr.trim();
@@ -1089,7 +1089,7 @@ async function simpanTrx(){
     var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
     var targetWarga = WARGA.find(function(w){ return w.nama.toLowerCase() === nm.toLowerCase(); });
-    var startYear = 2025;
+    var startYear = 2026;
     var startMonthIndex = 7; 
 
     if (targetWarga && targetWarga.mulaiIuran && targetWarga.mulaiIuran.includes('-')) {
