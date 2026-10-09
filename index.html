@@ -165,12 +165,13 @@ footer a{color:var(--GR)}
 
 /* PRINT STYLING */
 @media print {
-  header, footer, .tabs, .btn-digi, #abar, .pb, select, button, #toast, .th2 input { display: none !important; }
+  header, footer, .tabs, .btn-digi, #abar, .pb, select, button, #toast, .th2 input, .sg { display: none !important; }
   body { background: #fff; color: #000; }
   .wrap { max-width: 100%; padding: 0; }
   .tw { border: none; }
   #tab-rekap { display: block !important; }
   .row-detail { display: table-row !important; }
+  .icon-toggle { display: none !important; }
 }
 </style>
 </head>
@@ -300,7 +301,7 @@ footer a{color:var(--GR)}
       <strong>Cara setup (sekali saja):</strong>
       <ol>
         <li>Buka Google Sheets baru</li>
-        <li>Extensions &rarr; Apps Script &rarr; paste kode dari <strong>apps-script.js</strong></li>
+        <li>Extensions &rarr; Apps Script &rarr; paste kode backend</li>
         <li>Ganti <code>SPREADSHEET_ID</code> dengan ID spreadsheet Anda</li>
         <li>Deploy &rarr; New Deployment &rarr; Web App &rarr; <strong>Anyone</strong> &rarr; Deploy</li>
         <li>Copy URL deployment &rarr; paste di atas &rarr; klik Simpan</li>
@@ -427,23 +428,38 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- TAB: REKAP LAPORAN DATA -->
+  <!-- TAB: REKAP LAPORAN DATA (DENGAN FILTER BULAN & TAHUN UPDATE) -->
   <div id="tab-rekap" style="display:none">
     <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:14px;font-weight:700">Rekap Laporan Keuangan</div>
-        <div style="font-size:11px;color:var(--TA)">Klik baris periode untuk melihat breakdown rincian transaksi</div>
+        <div style="font-size:11px;color:var(--TA)">Pilih periode rekap, bulan, dan tahun untuk download/cetak laporan.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <select id="rekap-tipe" onchange="renderRekapData()" style="width:auto;padding:6px 10px">
-          <option value="mingguan">Rekap Mingguan</option>
           <option value="bulanan" selected>Rekap Bulanan</option>
+          <option value="mingguan">Rekap Mingguan</option>
           <option value="tahunan">Rekap Tahunan</option>
           <option value="semua">Semua Transaksi</option>
         </select>
+        <select id="rekap-bulan" onchange="renderRekapData()" style="width:auto;padding:6px 10px">
+          <option value="semua">Semua Bulan</option>
+          <option value="0">Januari</option>
+          <option value="1">Februari</option>
+          <option value="2">Maret</option>
+          <option value="3">April</option>
+          <option value="4">Mei</option>
+          <option value="5">Juni</option>
+          <option value="6">Juli</option>
+          <option value="7">Agustus</option>
+          <option value="8">September</option>
+          <option value="9">Oktober</option>
+          <option value="10">November</option>
+          <option value="11">Desember</option>
+        </select>
         <select id="rekap-tahun" onchange="renderRekapData()" style="width:auto;padding:6px 10px">
         </select>
-        <button class="btn bp" style="width:auto;padding:7px 14px;font-size:11px" onclick="window.print()">🖨️ Cetak / Download Rekap (PDF)</button>
+        <button class="btn bp" style="width:auto;padding:7px 14px;font-size:11px" onclick="cetakLaporanPilihan()">🖨️ Cetak / Download PDF</button>
       </div>
     </div>
 
@@ -1069,6 +1085,7 @@ function setTipe(t){
   document.getElementById('bt-M').className='ttb M'+(t==='M'?' on':'');
   document.getElementById('bt-K').className='ttb K'+(t==='K'?' on':'');
 }
+
 async function simpanTrx(){
   var nm=document.getElementById('f-nm').value.trim();
   var nom=parseFloat(document.getElementById('f-nom').value);
@@ -1086,38 +1103,15 @@ async function simpanTrx(){
 
   if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
     var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
-    var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
     var targetWarga = WARGA.find(function(w){ return w.nama.toLowerCase() === nm.toLowerCase(); });
     var startYear = 2026;
-    var startMonthIndex = 7; 
+    var startMonthIndex = 7; // Default Agustus 2026
 
     if (targetWarga && targetWarga.mulaiIuran && targetWarga.mulaiIuran.includes('-')) {
       var parts = targetWarga.mulaiIuran.split('-');
       startYear = parseInt(parts[0]);
       startMonthIndex = parseInt(parts[1]) - 1;
-    }
-
-    var existingMonthsPaid = [];
-    TRX.forEach(function(r){
-      if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
-        var rKet = (r.keterangan || '').toLowerCase();
-        monthNames.forEach(function(mName, idx){
-          if (rKet.includes(mName)) {
-            var matchYear = rKet.match(/\b(20\d{2})\b/);
-            var yr = matchYear ? parseInt(matchYear[1]) : startYear;
-            existingMonthsPaid.push(yr * 12 + idx);
-          }
-        });
-      }
-    });
-
-    if (existingMonthsPaid.length > 0) {
-      existingMonthsPaid.sort(function(a,b){ return a - b; });
-      var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
-      var nextMonthVal = lastPaidMonthVal + 1;
-      startYear = Math.floor(nextMonthVal / 12);
-      startMonthIndex = nextMonthVal % 12;
     }
 
     for (var i = 0; i < monthsToPay; i++) {
@@ -1304,17 +1298,24 @@ function renderGrafik(data){
 }
 
 // ================================================================
-//  FITUR REKAP LAPORAN DATA
+//  FITUR REKAP LAPORAN DATA (DISEMPURNAKAN BULAN & TAHUN)
 // ================================================================
 function renderRekapData(){
   var tipe = document.getElementById('rekap-tipe').value;
+  var blnTarget = document.getElementById('rekap-bulan').value;
   var thnTarget = parseInt(document.getElementById('rekap-tahun').value);
   var tb = document.getElementById('tbody-rekap');
 
   var filtered = TRX.filter(function(r){
     if(!r.tanggal) return false;
     var d = new Date(r.tanggal);
-    return tipe === 'tahunan' || tipe === 'semua' ? true : d.getFullYear() === thnTarget;
+    
+    // Filter Tahun
+    var matchYear = (tipe === 'semua') ? true : d.getFullYear() === thnTarget;
+    // Filter Bulan
+    var matchMonth = (blnTarget === 'semua') ? true : d.getMonth() === parseInt(blnTarget);
+
+    return matchYear && matchMonth;
   });
 
   var rekapMap = {};
@@ -1345,7 +1346,7 @@ function renderRekapData(){
 
   var keys = Object.keys(rekapMap);
   if (!keys.length) {
-    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--TA)">Tidak ada data untuk periode ini.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--TA)">Tidak ada data transaksi untuk bulan/tahun pilihan ini.</td></tr>';
     document.getElementById('rk-in').textContent = fRp(0);
     document.getElementById('rk-out').textContent = fRp(0);
     document.getElementById('rk-net').textContent = fRp(0);
@@ -1382,7 +1383,7 @@ function renderRekapData(){
         + '</tr>';
     }).join('');
 
-    html += '<tr id="' + rowId + '" class="row-detail">'
+    html += '<tr id="' + rowId + '" class="row-detail open">'
       + '<td colspan="5" style="padding:0 14px 14px 14px">'
       + '<div class="box-detail">'
       + '<div style="font-weight:700;font-size:11px;margin-bottom:6px;color:var(--HG)">Rincian / Breakdown Transaksi (' + k + '):</div>'
@@ -1402,6 +1403,11 @@ function renderRekapData(){
   document.getElementById('rk-out').textContent = fRp(totOut);
   var netTot = totIn - totOut;
   document.getElementById('rk-net').textContent = (netTot >= 0 ? '+' : '') + fRp(netTot);
+}
+
+function cetakLaporanPilihan() {
+  document.querySelectorAll('.row-detail').forEach(function(el){ el.classList.add('open'); });
+  window.print();
 }
 
 function toggleDetail(id, el){
