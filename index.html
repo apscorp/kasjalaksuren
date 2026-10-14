@@ -347,7 +347,7 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- NAVIGATION TABS & DIGITAL PAYMENT BUTTON -->
+  <!-- NAVIGATION TABS & DIGITAL BUTTON NAVIGATION -->
   <div class="nav-container">
     <div class="tabs">
       <button class="tb on" onclick="tab('trx',this)">Transaksi</button>
@@ -428,7 +428,7 @@ footer a{color:var(--GR)}
     </div>
   </div>
 
-  <!-- TAB: REKAP LAPORAN DATA (DENGAN FILTER BULAN & TAHUN UPDATE) -->
+  <!-- TAB: REKAP LAPORAN DATA -->
   <div id="tab-rekap" style="display:none">
     <div style="background:#fff;border-radius:var(--RA);border:1px solid var(--BD);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -1086,7 +1086,7 @@ function setTipe(t){
   document.getElementById('bt-K').className='ttb K'+(t==='K'?' on':'');
 }
 
-// LOGIKA PENAMBAHAN TRANSAKSI DISEMPURNAKAN (URUTAN BULAN OTOMATIS)
+// LOGIKA PENAMBAHAN TRANSAKSI DISEMPURNAKAN (AMBIL TAHUN DARI TANGGAL TRANSAKSI)
 async function simpanTrx(){
   var nm=document.getElementById('f-nm').value.trim();
   var nom=parseFloat(document.getElementById('f-nom').value);
@@ -1122,11 +1122,20 @@ async function simpanTrx(){
     TRX.forEach(function(r){
       if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
         var rKet = (r.keterangan || '').toLowerCase();
+        
+        // Ambil tahun langsung dari tanggal transaksi (r.tanggal)
+        var trxDate = new Date(r.tanggal);
+        var trxYear = !isNaN(trxDate.getFullYear()) ? trxDate.getFullYear() : startYear;
+
+        // Cek jika ada angka tahun tertulis di keterangan (override jika ada)
+        var matchYear = rKet.match(/\b(20\d{2})\b/);
+        if (matchYear) {
+          trxYear = parseInt(matchYear[1]);
+        }
+
         monthNames.forEach(function(mName, idx){
           if (rKet.includes(mName)) {
-            var matchYear = rKet.match(/\b(20\d{2})\b/);
-            var yr = matchYear ? parseInt(matchYear[1]) : startYear;
-            existingMonthsPaid.push(yr * 12 + idx);
+            existingMonthsPaid.push(trxYear * 12 + idx);
           }
         });
       }
