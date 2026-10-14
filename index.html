@@ -1086,7 +1086,7 @@ function setTipe(t){
   document.getElementById('bt-K').className='ttb K'+(t==='K'?' on':'');
 }
 
-// LOGIKA PENAMBAHAN TRANSAKSI DISEMPURNAKAN (AMBIL TAHUN DARI TANGGAL TRANSAKSI)
+// LOGIKA PENAMBAHAN TRANSAKSI DISEMPURNAKAN (TAHUN & BULAN AKURAT)
 async function simpanTrx(){
   var nm=document.getElementById('f-nm').value.trim();
   var nom=parseFloat(document.getElementById('f-nom').value);
@@ -1107,10 +1107,13 @@ async function simpanTrx(){
     var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
     var targetWarga = WARGA.find(function(w){ return w.nama.toLowerCase() === nm.toLowerCase(); });
-    var startYear = 2026;
-    var startMonthIndex = 7; // Default Agustus 2026
+    
+    // Ambil tahun default dari input tanggal transaksi (f-tgl)
+    var selectedDate = new Date(tgl);
+    var startYear = !isNaN(selectedDate.getFullYear()) ? selectedDate.getFullYear() : 2026;
+    var startMonthIndex = 7; // Default Agustus (index 7)
 
-    // 1. Ambil acuan awal dari profil warga
+    // 1. Ambil acuan awal dari profil warga jika ada
     if (targetWarga && targetWarga.mulaiIuran && targetWarga.mulaiIuran.includes('-')) {
       var parts = targetWarga.mulaiIuran.split('-');
       startYear = parseInt(parts[0]);
@@ -1123,7 +1126,7 @@ async function simpanTrx(){
       if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
         var rKet = (r.keterangan || '').toLowerCase();
         
-        // Ambil tahun langsung dari tanggal transaksi (r.tanggal)
+        // Ambil tahun langsung dari tanggal transaksi di database
         var trxDate = new Date(r.tanggal);
         var trxYear = !isNaN(trxDate.getFullYear()) ? trxDate.getFullYear() : startYear;
 
@@ -1141,7 +1144,7 @@ async function simpanTrx(){
       }
     });
 
-    // 3. Jika sudah ada transaksi lunas, lanjutkan ke bulan berikutnya (misal: September lunas -> lanjut Oktober)
+    // 3. Jika sudah ada transaksi lunas, lanjutkan ke bulan berikutnya
     if (existingMonthsPaid.length > 0) {
       existingMonthsPaid.sort(function(a,b){ return a - b; });
       var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
@@ -1152,9 +1155,12 @@ async function simpanTrx(){
 
     // 4. Generate item transaksi iuran
     for (var i = 0; i < monthsToPay; i++) {
-      var d = new Date(startYear, startMonthIndex + i, 1);
-      var monthName = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-      var autoKet = ket ? (ket + ' (' + monthName + ')') : ('Iuran bulan ' + monthName);
+      var targetMonthIndex = (startMonthIndex + i) % 12;
+      var targetYear = startYear + Math.floor((startMonthIndex + i) / 12);
+      
+      var monthName = monthNames[targetMonthIndex].charAt(0).toUpperCase() + monthNames[targetMonthIndex].slice(1);
+      var fullMonthLabel = monthName + ' ' + targetYear;
+      var autoKet = ket ? (ket + ' (' + fullMonthLabel + ')') : ('Iuran bulan ' + fullMonthLabel);
 
       itemsToSave.push({
         tanggal: tgl,
@@ -1335,7 +1341,7 @@ function renderGrafik(data){
 }
 
 // ================================================================
-//  FITUR REKAP LAPORAN DATA (DISEMPURNAKAN BULAN & TAHUN)
+//  FITUR REKAP LAPORAN DATA
 // ================================================================
 function renderRekapData(){
   var tipe = document.getElementById('rekap-tipe').value;
