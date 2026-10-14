@@ -1086,6 +1086,7 @@ function setTipe(t){
   document.getElementById('bt-K').className='ttb K'+(t==='K'?' on':'');
 }
 
+// LOGIKA PENAMBAHAN TRANSAKSI DISEMPURNAKAN (URUTAN BULAN OTOMATIS)
 async function simpanTrx(){
   var nm=document.getElementById('f-nm').value.trim();
   var nom=parseFloat(document.getElementById('f-nom').value);
@@ -1103,17 +1104,44 @@ async function simpanTrx(){
 
   if (TIPE === 'M' && kat === 'Iuran' && nom >= PER_MONTH_FEE) {
     var monthsToPay = Math.floor(nom / PER_MONTH_FEE);
+    var monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
 
     var targetWarga = WARGA.find(function(w){ return w.nama.toLowerCase() === nm.toLowerCase(); });
     var startYear = 2026;
     var startMonthIndex = 7; // Default Agustus 2026
 
+    // 1. Ambil acuan awal dari profil warga
     if (targetWarga && targetWarga.mulaiIuran && targetWarga.mulaiIuran.includes('-')) {
       var parts = targetWarga.mulaiIuran.split('-');
       startYear = parseInt(parts[0]);
       startMonthIndex = parseInt(parts[1]) - 1;
     }
 
+    // 2. Cek bulan mana saja yang SUDAH dibayar di riwayat transaksi
+    var existingMonthsPaid = [];
+    TRX.forEach(function(r){
+      if (r.jenis === 'masuk' && r.kategori === 'Iuran' && r.nama.toLowerCase().includes(nm.toLowerCase())) {
+        var rKet = (r.keterangan || '').toLowerCase();
+        monthNames.forEach(function(mName, idx){
+          if (rKet.includes(mName)) {
+            var matchYear = rKet.match(/\b(20\d{2})\b/);
+            var yr = matchYear ? parseInt(matchYear[1]) : startYear;
+            existingMonthsPaid.push(yr * 12 + idx);
+          }
+        });
+      }
+    });
+
+    // 3. Jika sudah ada transaksi lunas, lanjutkan ke bulan berikutnya (misal: September lunas -> lanjut Oktober)
+    if (existingMonthsPaid.length > 0) {
+      existingMonthsPaid.sort(function(a,b){ return a - b; });
+      var lastPaidMonthVal = existingMonthsPaid[existingMonthsPaid.length - 1];
+      var nextMonthVal = lastPaidMonthVal + 1;
+      startYear = Math.floor(nextMonthVal / 12);
+      startMonthIndex = nextMonthVal % 12;
+    }
+
+    // 4. Generate item transaksi iuran
     for (var i = 0; i < monthsToPay; i++) {
       var d = new Date(startYear, startMonthIndex + i, 1);
       var monthName = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
